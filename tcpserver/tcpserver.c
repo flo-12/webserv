@@ -14,7 +14,7 @@
 
 # define SERVER_PORT 18000
 
-int main(int argc, char**argv)
+int main(void)
 {
     int                 listenfd, connfd, n;
     struct sockaddr_in  servaddr;
@@ -47,18 +47,19 @@ int main(int argc, char**argv)
         return (0);
     }
 
+    printf("server listening on port: %i\n", SERVER_PORT);
     for(;;)
     {
-        struct sockaddr_in  addr;
-        socklen_t           addr_lem;
+        // struct sockaddr_in  addr;
+        // socklen_t           addr_len;
 
         // wait for a request and print it to terminal
         connfd = accept(listenfd, (struct sockaddr *) NULL, NULL);
         memset(recvline, 0, 4000);
-        while( (n = read(connfd, recvline, 3999)) > 0 );
+        while( (n = read(connfd, recvline, 3999)) > 0 )
         {
             printf("\n%s\n", recvline);
-            if (recvline[n-1] = '\n')
+            if (recvline[n-1] == '\n')
                 break;
         }
         memset(recvline, 0, 4000);

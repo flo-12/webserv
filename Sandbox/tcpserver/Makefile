@@ -18,3 +18,6 @@ fclean: clean
 	rm -f $(NAME)
 
 re: fclean all
+
+GET:
+	curl http://127.0.0.1:18000

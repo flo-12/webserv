@@ -44,6 +44,13 @@ void	TcpServer::_setupServer()
 		std::exit(EXIT_FAILURE);
 	}
 
+	// Set socket to non-blocking
+	if(fcntl(_serverFd, F_SETFL, O_NONBLOCK) < 0)
+	{
+		std::cerr << "Error: setup server (fcntl() failed)" << std::endl;
+		std::exit(EXIT_FAILURE);
+	}
+
 	// Identify a socket (assigning transport address to socket)
 	struct sockaddr_in	server_addr;
 
@@ -71,52 +78,55 @@ void	TcpServer::_initFdSet()
 	FD_SET(_serverFd, &_fdSet);
 }
 
-
-int	TcpServer::_acceptNewConnection( int server_fd )
+int	TcpServer::_acceptNewConnection()
 {
 	int					addr_size = sizeof(struct sockaddr_in);
     struct sockaddr_in	client_addr;
     int					clientFd;
 
-	clientFd = accept(server_fd, 
+	clientFd = accept( _serverFd, 
 			(struct sockaddr *)&client_addr, 
 			(socklen_t *)&addr_size);
 	return clientFd;
 }
 
-void*	TcpServer::_handleConnection( int client_socket )
+void	TcpServer::_handleConnection( int clientFd )
 {
 	char	buffer[_maxGetSize];
-	size_t	bytes_read;
-	int		msgsize = 0;
-	//int		file;
-	//char		actualpath[PATH_MAX + 1];
+	ssize_t	bytesRead;
 
-	while ((bytes_read = read(client_socket, buffer+msgsize, sizeof(buffer) - msgsize - 1)) > 0)
-    {
-		msgsize += bytes_read;
-		if (msgsize > _maxGetSize - 1 || buffer[msgsize-1] == '\n')
-			break;
+	if ((bytesRead = recv(clientFd, &buffer, 1023, 0)) < 0)
+	{
+		std::cerr << "error: recv()" << std::endl;
+		std::exit(EXIT_FAILURE);
 	}
-	buffer[msgsize - 1] = 0;
-	std::cout << buffer << std::endl;
+	else
+	{
+		buffer[bytesRead] = '\0';
+		std::cout << buffer << std::endl;
+	}
 	fflush( stdout );
 
-	snprintf((char *)buffer, sizeof(buffer), "HTTP/1.0 200 OK\r\n\r\nHello World");
-	write(client_socket, (char *)buffer, strlen((char *)buffer));
-	// file = open("index.html", O_RDONLY);
-	// if (file < 0)
-	// {
-	//		printf("could not open file\n");
-	//		exit(1);
-	// }
-	// while ( (bytes_read = read(file, buffer, _maxGetSize - 1)) > 0)
-	//		write (client_socket, buffer, bytes_read);
-	close( client_socket );
-	// close(file);
-	return NULL;
+	if (send(clientFd, _responseBuilder().c_str(), strlen(_responseBuilder().c_str()), 0) < 0)
+		std::cout << "Error: handle connection (send() failed)" << std::endl;
+	
+	close( clientFd );
 }
 
+std::string	TcpServer::_responseBuilder()
+{
+	std::string	crlf = "\r\n";
+	std::string	response;
+
+	response += "HTTP/1.1 200 OK" + crlf;			// Status-Line
+	response += "Content-Type: text/html" + crlf;	// Entity-Header-Field
+	response += "Content-Length: 12" + crlf;		// Entity-Header-Field
+	response += crlf;
+	response += "Hello World" + crlf;				// message-body
+	response += crlf;
+	
+	return response;
+}
 
 
 /**************************************************************/
@@ -128,79 +138,37 @@ void	TcpServer::serverRun()
 	std::cout << "server running and responding..." << std::endl;
 
 	int		client_socket;
-	fd_set	ready_sockets;
-	//char	*request;
+	fd_set	fdSet_tmp;
 
 	while (42)
 	{
-		ready_sockets = _fdSet;
+		FD_ZERO(&fdSet_tmp);
+		fdSet_tmp = _fdSet; // copy _fdSet b/c select() modifies it
 
-		if (select(FD_SETSIZE, &ready_sockets, NULL, NULL, NULL) < 0)
+		// select for non-blocking I/O
+		if ( select(FD_SETSIZE, &fdSet_tmp, NULL, NULL, NULL) < 0 )
 		{
-			printf("Error, select failed\n");
-			exit (1);
+			std::cerr << "Error select(): " << strerror(errno) << std::endl;
+			std::exit(EXIT_FAILURE);
 		}
 
-		for (int i = 0; i < FD_SETSIZE; i++)
+		// check all file descriptors
+		for ( int i = 0; i < FD_SETSIZE; i++ )
 		{
-			if (FD_ISSET(i, &ready_sockets))
+			if ( FD_ISSET(i, &fdSet_tmp) )
 			{
 				// two cases:
-				// 1. new connection that we want to accept
-				if (i == _serverFd)
+				if (i == _serverFd) // 1. new connection that we want to accept
 				{
-					client_socket = this->_acceptNewConnection( _serverFd );
-					FD_SET(client_socket, &_fdSet);
+					client_socket = this->_acceptNewConnection();
+					FD_SET(client_socket, &fdSet_tmp);
 				}
 				else // 2. read data from an existing connection
 				{
-					// request = server.request_parser(client_socket);
-					// server.response_builder(client_socket, request);
 					this->_handleConnection( client_socket );
-					FD_CLR(i, &_fdSet);
+					FD_CLR(i, &fdSet_tmp);
 				}
 			}
 		}
 	}
-}
-
-
-/**************************************************************/
-/*                 NOT USED PUBLIC METHODS                    */
-/**************************************************************/
-
-void	TcpServer::responseBuilder( int client_socket, char *buffer )
-{
-    int     file;
-    size_t  bytes_read;
-    
-    file = open("index.html", O_RDONLY);
-    if (file < 0)
-    {
-        printf("could not open file\n");
-        exit(1);
-    }
-    while ( (bytes_read = read(file, buffer, _maxGetSize - 1)) > 0 )
-        write (client_socket, buffer, bytes_read);
-    close(client_socket);
-    close(file);
-}
-
-char*	TcpServer::requestParser( int client_socket )
-{
-    char    buffer[_maxGetSize];
-    size_t  bytes_read;
-    int     msgsize = 0;
-    // char    actualpath[PATH_MAX + 1];
-
-    while ((bytes_read = read(client_socket, buffer+msgsize, sizeof(buffer) - msgsize - 1)) > 0)
-    {
-            msgsize += bytes_read;
-            if (msgsize > _maxGetSize - 1 || buffer[msgsize-1] == '\n')
-                break;
-    }
-    buffer[msgsize - 1] = 0;
-    printf("%s\n", buffer);
-    fflush(stdout);
-    return (NULL);
 }

@@ -8,7 +8,7 @@
 #include <unistd.h> // for close(), read(), write()
 #include <stdio.h> // for printf(), snprintf(), fflush()
 #include <fcntl.h> // for open(), O_RDONLY
-
+#include <cerrno> // for errno
 
 # define IP_ADDRESS 2130706433	/* 127.0.0.1 converted to int */
 # define SERVER_PORT 18000
@@ -33,18 +33,15 @@ class TcpServer
 
 		void	_setupServer();
 		void	_initFdSet();
-		
-		int		_acceptNewConnection( int server_fd );
-		void*	_handleConnection( int client_socket );
-		
+
+		int			_acceptNewConnection();
+		void		_handleConnection( int client_socket );
+		std::string	_responseBuilder();
+
 	public:
 		TcpServer();
 		~TcpServer();
 		
 		void	serverRun();
-
-
-		void	responseBuilder( int client_socket, char *buffer );
-		char*	requestParser( int client_socket );
 
 };

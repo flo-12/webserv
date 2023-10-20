@@ -6,22 +6,19 @@
 /**************************************************************/
 
 TcpServer::TcpServer()
-	: _serverPort(SERVER_PORT)
+	: _serverPort(SERVER_PORT), _serverIp(IP_ADDRESS), _maxConnections(MAX_CONNECTIONS), 
+	_maxGetSize(MAX_GET_SIZE), _serverFd(-1)
 {
-	/* _server_fd = -1;
-	_port = -1;
-	_backlog = -1;
-	_addr_size = sizeof(struct sockaddr_in); */
-
 	_setupServer();
-
+	std::cout << "server initialized & listening on port: " << _serverPort << std::endl;
+	_initFdSet();
 }
 
 TcpServer::~TcpServer()
 {
-	/* if (_server_fd != -1)
-		close(_server_fd);
-	if (_client_fd != -1)
+	if ( _serverFd != -1 )
+		close(_serverFd);
+	/* if (_client_fd != -1)
 		close(_client_fd); */
 }
 
@@ -31,58 +28,65 @@ TcpServer::~TcpServer()
 
 void	TcpServer::_setupServer()
 {
+	// Create socket
+	if ( (_serverFd = socket(AF_INET, SOCK_STREAM, 0)) < 0 )
+	{
+		std::cout << "Error: setup server (socket() failed)" << std::endl;
+		std::exit(EXIT_FAILURE);
+	}
+
+	// Reusable Port and Socket
+	int on = 1;
+	if ( setsockopt(_serverFd, SOL_SOCKET,  SO_REUSEADDR | SO_REUSEPORT,
+				&on, sizeof(int)) < 0 )
+	{
+		std::cout << "Error: setup server (setsockopt() failed)" << std::endl;
+		std::exit(EXIT_FAILURE);
+	}
+
+	// Identify a socket (assigning transport address to socket)
 	struct sockaddr_in	server_addr;
 
-	// Create socket
-	_serverFd = socket(AF_INET, SOCK_STREAM, 0);	
-	if (_serverFd < 0)
-	{
-		std::cout << "Error: socket creation" << std::endl;
-		std::exit(1);
-	}
-
-	bzero(&server_addr, sizeof(server_addr));
+	memset( &server_addr, 0, sizeof(server_addr) );
 	server_addr.sin_family = AF_INET;
-	server_addr.sin_addr.s_addr = htonl(IP_ADDRESS);
+	server_addr.sin_addr.s_addr = htonl(_serverIp);
 	server_addr.sin_port = htons(_serverPort);
-
-	// this lets us reuse an IP address or port which has been closed recently
-	int on = 1;
-	if (setsockopt(_serverFd, SOL_SOCKET,  SO_REUSEADDR | SO_REUSEPORT,
-				&on, sizeof(int)) < 0)
+	if ( bind(_serverFd, (struct sockaddr *) &server_addr, sizeof(server_addr)) < 0 )
 	{
-		std::cout << "Error: setsockopt() failed" << std::endl;
-		close(_serverFd);
-		std::exit(1);
+		std::cout << "Error: setup server (bind() failed)" << std::endl;
+		std::exit(EXIT_FAILURE);
 	}
 
-	if (bind(_serverFd, (struct sockaddr *) &server_addr, sizeof(server_addr)) < 0)
-	{
-		std::cout << "Error: bind() failed" << std::endl;
-		return ;
-	}
-	if(listen(_serverFd, 10) < 0)
+	// Listen for connections on a socket (mark socket as passive)
+	if( listen(_serverFd, _maxConnections) < 0 )
     {
-		std::cout << "Error:listen() failed" << std::endl;
+		std::cout << "Error: setup server (listen() failed)" << std::endl;
 		return ;
 	}
 }
+
+void	TcpServer::_initFdSet()
+{
+	FD_ZERO(&_fdSet);
+	FD_SET(_serverFd, &_fdSet);
+}
+
 
 int	TcpServer::_acceptNewConnection( int server_fd )
 {
 	int					addr_size = sizeof(struct sockaddr_in);
     struct sockaddr_in	client_addr;
-    int					client_socket;
+    int					clientFd;
 
-	client_socket = accept(server_fd, 
+	clientFd = accept(server_fd, 
 			(struct sockaddr *)&client_addr, 
 			(socklen_t *)&addr_size);
-	return client_socket;
+	return clientFd;
 }
 
 void*	TcpServer::_handleConnection( int client_socket )
 {
-	char	buffer[BUFSIZE];
+	char	buffer[_maxGetSize];
 	size_t	bytes_read;
 	int		msgsize = 0;
 	//int		file;
@@ -91,7 +95,7 @@ void*	TcpServer::_handleConnection( int client_socket )
 	while ((bytes_read = read(client_socket, buffer+msgsize, sizeof(buffer) - msgsize - 1)) > 0)
     {
 		msgsize += bytes_read;
-		if (msgsize > BUFSIZE - 1 || buffer[msgsize-1] == '\n')
+		if (msgsize > _maxGetSize - 1 || buffer[msgsize-1] == '\n')
 			break;
 	}
 	buffer[msgsize - 1] = 0;
@@ -106,9 +110,9 @@ void*	TcpServer::_handleConnection( int client_socket )
 	//		printf("could not open file\n");
 	//		exit(1);
 	// }
-	// while ( (bytes_read = read(file, buffer, BUFSIZE - 1)) > 0)
+	// while ( (bytes_read = read(file, buffer, _maxGetSize - 1)) > 0)
 	//		write (client_socket, buffer, bytes_read);
-	close(client_socket);
+	close( client_socket );
 	// close(file);
 	return NULL;
 }
@@ -121,19 +125,15 @@ void*	TcpServer::_handleConnection( int client_socket )
 
 void	TcpServer::serverRun()
 {
+	std::cout << "server running and responding..." << std::endl;
+
 	int		client_socket;
-	fd_set	current_sockets;
 	fd_set	ready_sockets;
 	//char	*request;
 
-	std::cout << "server listening on port: " << _serverPort << std::endl;
-
-	FD_ZERO(&current_sockets);				// set the fd set to zero
-	FD_SET(_serverFd, &current_sockets);	// add fd to set
-
 	while (42)
 	{
-		ready_sockets = current_sockets;
+		ready_sockets = _fdSet;
 
 		if (select(FD_SETSIZE, &ready_sockets, NULL, NULL, NULL) < 0)
 		{
@@ -149,21 +149,25 @@ void	TcpServer::serverRun()
 				// 1. new connection that we want to accept
 				if (i == _serverFd)
 				{
-					client_socket = this->_acceptNewConnection(_serverFd);
-					FD_SET(client_socket, &current_sockets);
+					client_socket = this->_acceptNewConnection( _serverFd );
+					FD_SET(client_socket, &_fdSet);
 				}
 				else // 2. read data from an existing connection
 				{
 					// request = server.request_parser(client_socket);
 					// server.response_builder(client_socket, request);
 					this->_handleConnection( client_socket );
-					FD_CLR(i, &current_sockets);
+					FD_CLR(i, &_fdSet);
 				}
 			}
 		}
 	}
 }
 
+
+/**************************************************************/
+/*                 NOT USED PUBLIC METHODS                    */
+/**************************************************************/
 
 void	TcpServer::responseBuilder( int client_socket, char *buffer )
 {
@@ -176,7 +180,7 @@ void	TcpServer::responseBuilder( int client_socket, char *buffer )
         printf("could not open file\n");
         exit(1);
     }
-    while ( (bytes_read = read(file, buffer, BUFSIZE - 1)) > 0 )
+    while ( (bytes_read = read(file, buffer, _maxGetSize - 1)) > 0 )
         write (client_socket, buffer, bytes_read);
     close(client_socket);
     close(file);
@@ -184,7 +188,7 @@ void	TcpServer::responseBuilder( int client_socket, char *buffer )
 
 char*	TcpServer::requestParser( int client_socket )
 {
-    char    buffer[BUFSIZE];
+    char    buffer[_maxGetSize];
     size_t  bytes_read;
     int     msgsize = 0;
     // char    actualpath[PATH_MAX + 1];
@@ -192,7 +196,7 @@ char*	TcpServer::requestParser( int client_socket )
     while ((bytes_read = read(client_socket, buffer+msgsize, sizeof(buffer) - msgsize - 1)) > 0)
     {
             msgsize += bytes_read;
-            if (msgsize > BUFSIZE - 1 || buffer[msgsize-1] == '\n')
+            if (msgsize > _maxGetSize - 1 || buffer[msgsize-1] == '\n')
                 break;
     }
     buffer[msgsize - 1] = 0;

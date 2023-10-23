@@ -51,26 +51,17 @@ void	WebServ::_setupServer( int i )
 {
 	// Create socket
 	if ( (_serverFds[i] = socket(AF_INET, SOCK_STREAM, 0)) < 0 )
-	{
-		std::cout << "Error: setup server (socket() failed)" << std::endl;
-		std::exit(EXIT_FAILURE);
-	}
+		throw std::runtime_error("Error: setup server (socket() failed)");
 
 	// Reusable Port and Socket
 	int on = 1;
 	if ( setsockopt(_serverFds[i], SOL_SOCKET,  SO_REUSEADDR | SO_REUSEPORT,
 				&on, sizeof(int)) < 0 )
-	{
-		std::cout << "Error: setup server (setsockopt() failed)" << std::endl;
-		std::exit(EXIT_FAILURE);
-	}
+		throw std::runtime_error("Error: setup server (setsockopt() failed)");
 
 	// Set socket to non-blocking
 	if( fcntl(_serverFds[i], F_SETFL, O_NONBLOCK) < 0 )
-	{
-		std::cerr << "Error: setup server (fcntl() failed)" << std::endl;
-		std::exit(EXIT_FAILURE);
-	}
+		throw std::runtime_error("Error: setup server (fcntl() failed)");
 
 	// Identify a socket (assigning transport address to socket)
 	struct sockaddr_in	server_addr;
@@ -80,17 +71,11 @@ void	WebServ::_setupServer( int i )
 	server_addr.sin_addr.s_addr = htonl(_serverIp[i]);
 	server_addr.sin_port = htons(_serverPorts[i]);
 	if ( bind(_serverFds[i], (struct sockaddr *) &server_addr, sizeof(server_addr)) < 0 )
-	{
-		std::cout << "Error: setup server (bind() failed)" << std::endl;
-		std::exit(EXIT_FAILURE);
-	}
+		throw std::runtime_error("Error: setup server (bind() failed)");
 
 	// Listen for connections on a socket (mark socket as passive)
 	if( listen(_serverFds[i], _maxConnections) < 0 )
-    {
-		std::cout << "Error: setup server (listen() failed)" << std::endl;
-		return ;
-	}
+		throw std::runtime_error("Error: setup server (listen() failed)");
 }
 
 void	WebServ::_initFdSet( int i )
@@ -108,10 +93,7 @@ int	WebServ::_acceptNewConnection( int serverFd )
 
 	clientFd = accept(serverFd, NULL, NULL);
 	if ( clientFd < 0 && errno != EWOULDBLOCK )
-	{
-		std::cerr << "error: accept() failed" << std::endl;
-		std::exit(EXIT_FAILURE);
-	}
+		throw std::runtime_error("Error: accept() failed");
 	return clientFd;
 }
 
@@ -121,10 +103,7 @@ void	WebServ::_handleConnection( int clientFd )
 	ssize_t	bytesRead;
 
 	if ( (bytesRead = recv(clientFd, &buffer, 1023, 0)) < 0 )
-	{
-		std::cerr << "error: recv()" << std::endl;
-		std::exit(EXIT_FAILURE);
-	}
+		throw std::runtime_error("Error: recv() failed");
 	else
 	{
 		buffer[bytesRead] = '\0';
@@ -170,10 +149,7 @@ void	WebServ::serverRun()
 		{
 			// Verify if a new connection is available
 			if ( (status = poll(_fdSet, _nbrServers, timeout)) < 0)
-			{
-				std::cerr << "error: poll() failed";
-				std::exit(EXIT_FAILURE);
-			}
+				throw std::runtime_error("Error: poll() failed");
 		}
 
 		// Verify which server has a new connection

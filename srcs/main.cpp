@@ -28,17 +28,17 @@ int	main( int argc, char **argv )
 	
 	//signal(SIGINT, signal_handler);
 	
-	//try
-	//{
+	try
+	{
 		WebServ webserv;
 
 		webserv.serverRun();
-	/* }
+	}
 	catch( const std::exception& e )
 	{
 		std::cerr << e.what() << '\n';
 		return EXIT_FAILURE;
-	} */
+	}
 	
 	return EXIT_SUCCESS;
 }

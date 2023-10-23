@@ -13,7 +13,7 @@
 #pragma once
 
 #include <iostream>
-#include <cstdlib> // for exit()
+//#include <cstdlib> // for exit()
 #include <sys/socket.h> // for socket()
 #include <netdb.h> // for struct sockaddr_in
 #include <string.h> // for bzero(), strlen()
@@ -22,6 +22,7 @@
 #include <fcntl.h> // for open(), O_RDONLY
 #include <cerrno> // for errno
 #include <poll.h> // for poll
+# include <exception> // for exception
 
 /************ INTERFACE TO CONFIG_PARSER ************/
 # define MAX_GET_SIZE 8192

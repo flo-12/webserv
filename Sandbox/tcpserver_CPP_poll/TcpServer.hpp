@@ -13,6 +13,7 @@
 
 # define MAX_GET_SIZE 8192
 # define MAX_CONNECTIONS 20
+#define TIMEOUT_POLL 500
 
 const int serverIPs[] = {2130706433, 2130706433, 2130706434}; 	/* 127.0.0.1 converted to int */
 const int serverPorts[] = {18000, 20000, 19000};

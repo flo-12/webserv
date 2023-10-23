@@ -91,6 +91,8 @@ void	TcpServer::_initFdSet( int i )
 int	TcpServer::_acceptNewConnection( int serverFd )
 {
 	int	clientFd;
+	
+	errno = 0;
 
 	clientFd = accept(serverFd, NULL, NULL);
 	if ( clientFd < 0 && errno != EWOULDBLOCK )
@@ -147,14 +149,19 @@ void	TcpServer::serverRun()
 	std::cout << "server running and responding..." << std::endl;
 
 	int	clientSocket;
+	int	timeout = TIMEOUT_POLL;
+	int	status = 0;
 
 	while (42)
 	{
-		// Verify if a new connection is available
-		if ( poll(_fdSet, _nbrServers, -1) < 0)	// no timeout
+		while ( status == 0 )
 		{
-			std::cerr << "error: poll() failed";
-			std::exit(EXIT_FAILURE);
+			// Verify if a new connection is available
+			if ( (status = poll(_fdSet, _nbrServers, timeout)) < 0)
+			{
+				std::cerr << "error: poll() failed";
+				std::exit(EXIT_FAILURE);
+			}
 		}
 		
 		// Verify which server has a new connection
@@ -174,5 +181,6 @@ void	TcpServer::serverRun()
 				}
 			}
 		}
+		status = 0;
 	}
 }

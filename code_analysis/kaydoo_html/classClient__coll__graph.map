@@ -1,8 +1,0 @@
-<map id="Client" name="Client">
-<area shape="rect" id="node1" title=" " alt="" coords="124,184,180,211"/>
-<area shape="rect" id="node2" href="$classServerConfig.html" title=" " alt="" coords="5,95,104,121"/>
-<area shape="rect" id="node3" href="$classHttpRequest.html" title=" " alt="" coords="108,5,204,32"/>
-<area shape="rect" id="node4" href="$classResponse.html" title=" " alt="" coords="229,95,310,121"/>
-<area shape="rect" id="node5" href="$classCgiHandler.html" title=" " alt="" coords="231,5,318,32"/>
-<area shape="rect" id="node6" href="$classMime.html" title=" " alt="" coords="342,5,397,32"/>
-</map>

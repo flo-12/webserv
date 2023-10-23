@@ -163,7 +163,7 @@ void	TcpServer::serverRun()
 				std::exit(EXIT_FAILURE);
 			}
 		}
-		
+
 		// Verify which server has a new connection
 		for (int i = 0; i < _nbrServers; ++i)
 		{

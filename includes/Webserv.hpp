@@ -43,7 +43,7 @@ class WebServ
 	private:
 		const int*		_serverPorts;
 		const int*		_serverIp;
-		int		_nbrServers;
+		int				_nbrServers;
 		const int		_maxConnections;
 		const int		_maxGetSize;
 		int				_serverFds[nbrServers];
@@ -52,9 +52,12 @@ class WebServ
 		void	_setupServer( int i );
 		void	_initFdSet( int i );
 
-		int			_acceptNewConnection( int serverFd );
-		void		_handleConnection( int client_socket );
+		int			_acceptNewConnection( int serverFd, int nbrFd );
+		void		_receiveRequest( int client_socket, int i );
+		int			_sendResponse( int client_socket, int nbrFd, int i );
 		std::string	_responseBuilder();
+
+		bool		_fdIsServer( int fdToFind );
 
 	public:
 		WebServ();

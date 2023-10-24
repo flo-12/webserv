@@ -80,7 +80,7 @@ void	WebServ::_initFdSet( int i )
 	_fdSet[i].events = _fdSet[i].events | POLLIN;	// Set the POLLIN bit	
 }
 
-int	WebServ::_acceptNewConnection( int serverFd )
+int	WebServ::_acceptNewConnection( int serverFd, int nbrFd )
 {
 	int	clientFd;
 	
@@ -90,34 +90,60 @@ int	WebServ::_acceptNewConnection( int serverFd )
 	if ( clientFd < 0 && errno != EWOULDBLOCK )
 	{
 		std::cerr << "Error: accept() failed" << std::endl;
-		return -1;
+		return nbrFd;
 	}
-	
-	/* if( fcntl(clientFd, F_SETFL, O_NONBLOCK) < 0 )
+
+	if( fcntl(clientFd, F_SETFL, O_NONBLOCK) < 0 )
 	{
 		std::cerr << "Error: fcntl() for client failed" << std::endl;
 		return -1;
-	} */
+	}
 
-	return clientFd;
+	_fdSet[nbrFd].fd = clientFd;
+	_fdSet[nbrFd].events = POLLIN;
+	_fdSet[nbrFd].revents = 0;
+	nbrFd++;
+
+	std::cout << "\r" << "New connection with client " << clientFd << "established." << std::endl;
+
+	return nbrFd;
 }
 
-void	WebServ::_handleConnection( int clientFd )
+void	WebServ::_receiveRequest( int clientFd, int i )
 {
 	char	buffer[_maxGetSize];
 	ssize_t	bytesRead;
 
 	if ( (bytesRead = recv(clientFd, &buffer, _maxGetSize - 1, 0)) < 0 )
-		throw std::runtime_error("Error: recv() failed");
+		throw std::runtime_error("Error: recv() failed");	// tbd: handle all errors -> really exit program?
 	else
-	{
 		buffer[bytesRead] = '\0';
-		std::cout << buffer << std::endl;
-	}
 	fflush( stdout );
 
-	if (send(clientFd, _responseBuilder().c_str(), strlen(_responseBuilder().c_str()), 0) < 0)
-		std::cout << "Error: handle connection (send() failed)" << std::endl;
+	if ( bytesRead < _maxGetSize - 1 )
+	{
+		_fdSet[i].events = POLLOUT;
+		std::cout << "Request received complete" << std::endl;
+		std::cout << buffer << std::endl;
+	}
+	else	// tbd: handle request bigger than buffer (store in internal std::string)
+		std::cout << "Request received incomplete (buffer not big enough)" << std::endl;
+}
+
+int	WebServ::_sendResponse( int clientFd, int nbrFd, int i )
+{
+	std::cout << "\r" << "Sending Response on client: " << _fdSet[i].fd << std::endl;
+
+	if ( send(clientFd, _responseBuilder().c_str(), strlen(_responseBuilder().c_str()), 0) < 0 )
+		std::cerr << "Error: handle connection (send() failed)" << std::endl;
+	
+	// close the socket and remove it from the fdSet
+	close( _fdSet[i].fd );
+	_fdSet[i] = _fdSet[nbrFd - 1];
+	//_fdSet[nbrFd - 1] = {0, 0, 0}; // change _fdSet to std::vector and do _fdSet.pop_back()
+	nbrFd--;
+
+	return nbrFd;
 }
 
 std::string	WebServ::_responseBuilder()
@@ -135,6 +161,15 @@ std::string	WebServ::_responseBuilder()
 	return response;
 }
 
+bool	WebServ::_fdIsServer( int fdToFind )
+{
+	for ( int i = 0; i < _nbrServers; ++i )
+	{
+		if ( _serverFds[i] == fdToFind )
+			return true;
+	}
+	return false;
+}
 
 /**************************************************************/
 /*                      PUBLIC METHODS                        */
@@ -144,42 +179,32 @@ void	WebServ::serverRun()
 {
 	std::cout << "server running and responding..." << std::endl;
 
-	int	clientSocket;
 	int	timeout = TIMEOUT_POLL;
-	int	status = 0;
+	int	retPoll = 0;
+
+	int	nbrFd = _nbrServers;
 
 	while (42)
 	{
-		while ( status == 0 )
-		{
-			// Verify if a new connection is available
-			if ( (status = poll(_fdSet, _nbrServers, timeout)) < 0)
-				throw std::runtime_error("Error: poll() failed");
-		}
-
+		// Verify if a new connection is available
+		if ( (retPoll = poll(_fdSet, nbrFd, timeout)) < 0)
+			throw std::runtime_error("Error: poll() failed");
+		
 		// Verify which server has a new connection
-		for (int i = 0; i < _nbrServers; ++i)
-		{
-			// If the server has a new connection ready
-			if ( (_fdSet[i].revents & POLLIN) == POLLIN )
+		while ( retPoll > 0 ) {
+			for (int i = 0; i < nbrFd; ++i)
 			{
-				std::cout << "\r" << "Client connected on server: " << _fdSet[i].fd << "(index: " << i << ")" << std::endl;
-
-				if ( (clientSocket = _acceptNewConnection(_fdSet[i].fd)) >= 0 )
-				{
-					/* _fdSet[_nbrServers].fd = clientSocket;
-					_fdSet[_nbrServers].events = POLLIN;
-					_fdSet[_nbrServers].revents = 0;
-					_nbrServers++; */
-
-					this->_handleConnection( clientSocket );
-
-					// close the socket
-					close( clientSocket );
-				}
+				if ( (_fdSet[i].revents & POLLERR) == POLLERR )	// tbd: handle all errors!!!!
+					break ;
+				else if ( (_fdSet[i].revents & POLLIN) == POLLIN && _fdIsServer(_fdSet[i].fd) )
+					nbrFd = _acceptNewConnection(_fdSet[i].fd, nbrFd);
+				else if ( (_fdSet[i].revents & POLLIN) == POLLIN )
+					this->_receiveRequest( _fdSet[i].fd, i );
+				else if ( (_fdSet[i].revents & POLLOUT) == POLLOUT )
+					nbrFd = this->_sendResponse( _fdSet[i].fd, nbrFd, i );
 			}
+			retPoll--;
 		}
-		status = 0;
 	}
 }
 

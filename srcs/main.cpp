@@ -12,6 +12,19 @@
 
 #include "../includes/Webserv.hpp"
 #include <cstdlib>	// for EXIT_SUCCESS and EXIT_FAILURE
+#include <csignal>	// for signal()
+
+WebServ*	webservPtr = NULL;
+
+// Signal handler function for SIGINT (CTRL+C)
+void	sigint_handler( int signum )
+{
+	(void)signum;
+	std::cout << std::endl << "Received CTRL+C (SIGINT) signal. Exiting..." << std::endl;
+	if ( webservPtr )
+		webservPtr->serverShutdown();
+	std::exit(EXIT_SUCCESS);
+}
 
 int	main( int argc, char **argv )
 {
@@ -24,13 +37,17 @@ int	main( int argc, char **argv )
 	{}
 	else					// wrong usage
 	{} */
-
 	
-	//signal(SIGINT, signal_handler);
+	if ( signal(SIGINT, sigint_handler) == SIG_ERR )
+	{
+		std::cerr << "Error setting up signal handler" << std::endl;
+		return EXIT_FAILURE;
+	}
 	
 	try
 	{
 		WebServ webserv;
+		webservPtr = &webserv;
 
 		webserv.serverRun();
 	}

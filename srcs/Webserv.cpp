@@ -35,12 +35,7 @@ WebServ::WebServ()
 
 WebServ::~WebServ()
 {
-	for( int i = 0; i < _nbrServers; ++i ) {
-		if ( _serverFds[i] != -1 )
-			close(_serverFds[i]);
-	}
-	/* if (_client_fd != -1)
-		close(_client_fd); */
+	serverShutdown();
 }
 
 /**************************************************************/
@@ -93,7 +88,17 @@ int	WebServ::_acceptNewConnection( int serverFd )
 
 	clientFd = accept(serverFd, NULL, NULL);
 	if ( clientFd < 0 && errno != EWOULDBLOCK )
-		throw std::runtime_error("Error: accept() failed");
+	{
+		std::cerr << "Error: accept() failed" << std::endl;
+		return -1;
+	}
+	
+	/* if( fcntl(clientFd, F_SETFL, O_NONBLOCK) < 0 )
+	{
+		std::cerr << "Error: fcntl() for client failed" << std::endl;
+		return -1;
+	} */
+
 	return clientFd;
 }
 
@@ -102,7 +107,7 @@ void	WebServ::_handleConnection( int clientFd )
 	char	buffer[_maxGetSize];
 	ssize_t	bytesRead;
 
-	if ( (bytesRead = recv(clientFd, &buffer, 1023, 0)) < 0 )
+	if ( (bytesRead = recv(clientFd, &buffer, _maxGetSize - 1, 0)) < 0 )
 		throw std::runtime_error("Error: recv() failed");
 	else
 	{
@@ -162,6 +167,11 @@ void	WebServ::serverRun()
 
 				if ( (clientSocket = _acceptNewConnection(_fdSet[i].fd)) >= 0 )
 				{
+					/* _fdSet[_nbrServers].fd = clientSocket;
+					_fdSet[_nbrServers].events = POLLIN;
+					_fdSet[_nbrServers].revents = 0;
+					_nbrServers++; */
+
 					this->_handleConnection( clientSocket );
 
 					// close the socket
@@ -173,3 +183,12 @@ void	WebServ::serverRun()
 	}
 }
 
+void	WebServ::serverShutdown()
+{
+	std::cout << "server shutting down..." << std::endl;
+
+	for( int i = 0; i < _nbrServers; ++i ) {
+		if ( _serverFds[i] != -1 )
+			close(_serverFds[i]);
+	}
+}

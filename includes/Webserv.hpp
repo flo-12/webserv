@@ -43,7 +43,7 @@ class WebServ
 	private:
 		const int*		_serverPorts;
 		const int*		_serverIp;
-		const int		_nbrServers;
+		int		_nbrServers;
 		const int		_maxConnections;
 		const int		_maxGetSize;
 		int				_serverFds[nbrServers];
@@ -61,5 +61,6 @@ class WebServ
 		~WebServ();
 		
 		void	serverRun();
+		void	serverShutdown();
 };
 

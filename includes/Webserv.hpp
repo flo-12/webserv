@@ -22,11 +22,12 @@
 #include <fcntl.h> // for open(), O_RDONLY
 #include <cerrno> // for errno
 #include <poll.h> // for poll
-# include <exception> // for exception
+#include <exception> // for exception
+#include <vector> // for vector
 
 /************ INTERFACE TO CONFIG_PARSER ************/
 # define MAX_GET_SIZE 8192
-# define MAX_CONNECTIONS 20
+# define MAX_CONNECTIONS 2000
 #define TIMEOUT_POLL 500
 
 const int serverIPs[] = {2130706433, 2130706433, 2130706434}; 	/* 127.0.0.1 converted to int */
@@ -43,18 +44,19 @@ class WebServ
 	private:
 		const int*		_serverPorts;
 		const int*		_serverIp;
-		int				_nbrServers;
+		const int		_nbrServers;
+		unsigned int	_nbrFds;
 		const int		_maxConnections;
 		const int		_maxGetSize;
 		int				_serverFds[nbrServers];
-		struct pollfd	_fdSet[nbrServers];
+		struct pollfd	_pollFds[MAX_CONNECTIONS];
 
 		void	_setupServer( int i );
-		void	_initFdSet( int i );
+		void	_initFdSet( int fd );
 
-		int			_acceptNewConnection( int serverFd, int nbrFd );
-		void		_receiveRequest( int client_socket, int i );
-		int			_sendResponse( int client_socket, int nbrFd, int i );
+		void		_acceptNewConnection( int serverFd );
+		void		_receiveRequest( struct pollfd *client );
+		void		_sendResponse( struct pollfd *client, unsigned int i );
 		std::string	_responseBuilder();
 
 		bool		_fdIsServer( int fdToFind );

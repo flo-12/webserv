@@ -24,12 +24,16 @@ WebServ::WebServ()
 	// Initialize all FD with -1
 	memset( _serverFds, -1, sizeof(_serverFds) );
 
-	// Initialize all servers
-	for( int i = 0; i < _nbrServers; ++i ) {
+	// Initialize all servers and the _pollFds
+	_nbrFds = 0;
+	for ( int i = 0; i < _nbrServers; ++i ) {
 		_setupServer( i );
-		_initFdSet( i );
+		_initFdSet( _serverFds[i] );
+		_nbrFds++;
 	}
-
+	for ( int i = _nbrServers; i < _maxConnections; ++i )
+		_pollFds[i].fd = -1;
+	
 	std::cout << "server initialized & listening on port" << std::endl;
 }
 
@@ -73,14 +77,14 @@ void	WebServ::_setupServer( int i )
 		throw std::runtime_error("Error: setup server (listen() failed)");
 }
 
-void	WebServ::_initFdSet( int i )
+void	WebServ::_initFdSet( int fd )
 {
-	_fdSet[i].fd = _serverFds[i];	// set descriptor fd to to listening socket
-	_fdSet[i].events = 0;			// Clear the bit array
-	_fdSet[i].events = _fdSet[i].events | POLLIN;	// Set the POLLIN bit	
+	_pollFds[_nbrFds].fd = fd;		// set descriptor fd to to listening socket
+	_pollFds[_nbrFds].events = 0;	// Clear the bit array
+	_pollFds[_nbrFds].events = _pollFds[_nbrFds].events | POLLIN;	// Set the POLLIN bit	
 }
 
-int	WebServ::_acceptNewConnection( int serverFd, int nbrFd )
+void	WebServ::_acceptNewConnection( int serverFd )
 {
 	int	clientFd;
 	
@@ -90,60 +94,57 @@ int	WebServ::_acceptNewConnection( int serverFd, int nbrFd )
 	if ( clientFd < 0 && errno != EWOULDBLOCK )
 	{
 		std::cerr << "Error: accept() failed" << std::endl;
-		return nbrFd;
+		return ;
 	}
 
 	if( fcntl(clientFd, F_SETFL, O_NONBLOCK) < 0 )
 	{
 		std::cerr << "Error: fcntl() for client failed" << std::endl;
-		return -1;
+		return ;
 	}
 
-	_fdSet[nbrFd].fd = clientFd;
-	_fdSet[nbrFd].events = POLLIN;
-	_fdSet[nbrFd].revents = 0;
-	nbrFd++;
+	_pollFds[_nbrFds].fd = clientFd;
+	_pollFds[_nbrFds].events = POLLIN;
+	_pollFds[_nbrFds].revents = 0;
+	_nbrFds++;
 
-	std::cout << "\r" << "New connection with client " << clientFd << "established." << std::endl;
-
-	return nbrFd;
+	std::cout << "New connection with client " << clientFd << " established." << std::endl;
 }
 
-void	WebServ::_receiveRequest( int clientFd, int i )
+void	WebServ::_receiveRequest( struct pollfd *client )
 {
 	char	buffer[_maxGetSize];
 	ssize_t	bytesRead;
 
-	if ( (bytesRead = recv(clientFd, &buffer, _maxGetSize - 1, 0)) < 0 )
+	if ( (bytesRead = recv(client->fd, &buffer, _maxGetSize - 1, 0)) < 0 )
 		throw std::runtime_error("Error: recv() failed");	// tbd: handle all errors -> really exit program?
 	else
 		buffer[bytesRead] = '\0';
 	fflush( stdout );
 
+	/* TBD: review!!! (case return 0 should close the fd?!) */
 	if ( bytesRead < _maxGetSize - 1 )
 	{
-		_fdSet[i].events = POLLOUT;
+		client->events = POLLOUT;
 		std::cout << "Request received complete" << std::endl;
-		std::cout << buffer << std::endl;
+		//std::cout << buffer << std::endl;
 	}
 	else	// tbd: handle request bigger than buffer (store in internal std::string)
 		std::cout << "Request received incomplete (buffer not big enough)" << std::endl;
 }
 
-int	WebServ::_sendResponse( int clientFd, int nbrFd, int i )
+void	WebServ::_sendResponse( struct pollfd *client, unsigned int i )
 {
-	std::cout << "\r" << "Sending Response on client: " << _fdSet[i].fd << std::endl;
+	std::cout << "Sending Response on client: " << client->fd << std::endl;
 
-	if ( send(clientFd, _responseBuilder().c_str(), strlen(_responseBuilder().c_str()), 0) < 0 )
+	if ( send(client->fd, _responseBuilder().c_str(), strlen(_responseBuilder().c_str()), 0) < 0 )
 		std::cerr << "Error: handle connection (send() failed)" << std::endl;
 	
 	// close the socket and remove it from the fdSet
-	close( _fdSet[i].fd );
-	_fdSet[i] = _fdSet[nbrFd - 1];
-	//_fdSet[nbrFd - 1] = {0, 0, 0}; // change _fdSet to std::vector and do _fdSet.pop_back()
-	nbrFd--;
-
-	return nbrFd;
+	close( client->fd );
+	_pollFds[i] = _pollFds[_nbrFds - 1];
+	_pollFds[_nbrFds - 1].fd = -1; // TBD: Review if OK
+	_nbrFds--;
 }
 
 std::string	WebServ::_responseBuilder()
@@ -182,26 +183,24 @@ void	WebServ::serverRun()
 	int	timeout = TIMEOUT_POLL;
 	int	retPoll = 0;
 
-	int	nbrFd = _nbrServers;
-
 	while (42)
 	{
 		// Verify if a new connection is available
-		if ( (retPoll = poll(_fdSet, nbrFd, timeout)) < 0)
+		if ( (retPoll = poll(_pollFds, _nbrFds, timeout)) < 0)
 			throw std::runtime_error("Error: poll() failed");
-		
+	
 		// Verify which server has a new connection
 		while ( retPoll > 0 ) {
-			for (int i = 0; i < nbrFd; ++i)
+			for (unsigned int i = 0; i < _nbrFds; ++i)
 			{
-				if ( (_fdSet[i].revents & POLLERR) == POLLERR )	// tbd: handle all errors!!!!
+				if ( (_pollFds[i].revents & POLLERR) == POLLERR )	// tbd: handle all errors!!!!
 					break ;
-				else if ( (_fdSet[i].revents & POLLIN) == POLLIN && _fdIsServer(_fdSet[i].fd) )
-					nbrFd = _acceptNewConnection(_fdSet[i].fd, nbrFd);
-				else if ( (_fdSet[i].revents & POLLIN) == POLLIN )
-					this->_receiveRequest( _fdSet[i].fd, i );
-				else if ( (_fdSet[i].revents & POLLOUT) == POLLOUT )
-					nbrFd = this->_sendResponse( _fdSet[i].fd, nbrFd, i );
+				else if ( (_pollFds[i].revents & POLLIN) == POLLIN && _fdIsServer(_pollFds[i].fd) )
+					_acceptNewConnection(_pollFds[i].fd );
+				else if ( (_pollFds[i].revents & POLLIN) == POLLIN )
+					_receiveRequest( &_pollFds[i] );
+				else if ( (_pollFds[i].revents & POLLOUT) == POLLOUT )
+					_sendResponse( &_pollFds[i], i );
 			}
 			retPoll--;
 		}

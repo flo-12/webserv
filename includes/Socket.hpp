@@ -24,7 +24,7 @@ typedef enum eSocketType
 
 typedef struct s_reqStatus {
 	bool		pendingReceive;
-	int			contentLength;
+	int			contentLength;	// for POST
 	int			readBytes;
 	std::string	buffer;
 } t_reqStatus;

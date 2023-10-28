@@ -312,6 +312,24 @@ void	WebServ::_receiveRequest( Socket &clientSocket )
 		_closeConnection( clientSocket );
 		return ;
 	}
+	reqstatus.readBytes += bytesRead;
+	if ( !reqstatus.pendingReceive ) {
+		reqstatus.contentLength = _parseContentLength( buffer );
+		reqstatus.buffer = std::string(buffer, bytesRead);
+		reqstatus.readBytes -= _subtractHeader( buffer );
+	}
+	else {
+		reqstatus.buffer.append(std::string(buffer, bytesRead));
+	}
+	if ( reqstatus.readBytes >= reqstatus.contentLength ) {
+		clientSocket._reqStatus.pendingReceive = false;
+		clientSocket._reqStatus.contentLength = 0;
+		clientSocket._reqStatus.readBytes = 0;
+		return true;
+	}
+	reqstatus.pendingReceive = true;
+	return false;
+	
 	else if ( bytesRead == 0 )
 		//buffer[bytesRead] = '\0';
 

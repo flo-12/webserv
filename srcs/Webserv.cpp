@@ -276,33 +276,46 @@ void	WebServ::_acceptNewConnection( Socket &serverSocket )
 */
 void	WebServ::_receiveRequest( Socket &clientSocket )
 {
+	/*
+	1) read request (recv)
+	2) if bytes == 0 -> return false
+	3) increment readBytes by bytes read
+	4) 
+	*/
 	char buffer[MAX_REQ_SIZE] = {0};
-  t_reqStatus &reqstatus = socket.reqStatus;
-  bytes = recv(socket.getFd(), buffer, sizeof(buffer), O_NONBLOCK);
-  reqstatus.readBytes += bytes;
-  if (bytes == 0) return (false);
-  if (!reqstatus.pendingReceive) {
-    reqstatus.clen = parseCl(buffer);
-    reqstatus.buffer = std::string(buffer, bytes);
-    reqstatus.readBytes -= subtrHeader(buffer);
-  } else {
-    reqstatus.buffer.append(std::string(buffer, bytes));
-  }
-  if (reqstatus.readBytes >= reqstatus.clen) {
-    socket.setReqStatus();
-    return (true);
-  }
-  reqstatus.pendingReceive = true;
-  return (false);
+	t_reqStatus &reqstatus = socket.reqStatus;
+	bytes = recv(socket.getFd(), buffer, sizeof(buffer), O_NONBLOCK);
+	reqstatus.readBytes += bytes;
+	if (bytes == 0)
+		return (false);
+	if (!reqstatus.pendingReceive) {
+		reqstatus.clen = parseCl(buffer);
+		reqstatus.buffer = std::string(buffer, bytes);
+		reqstatus.readBytes -= subtrHeader(buffer);
+	}
+	else {
+		reqstatus.buffer.append(std::string(buffer, bytes));
+	}
+	if (reqstatus.readBytes >= reqstatus.clen) {
+		socket.setReqStatus(); // reqStat.pendingReceive = false; reqStat.clen = 0; reqStat.readBytes = 0;
+		return (true);
+	}
+	reqstatus.pendingReceive = true;
+	return (false);
 
 
-	char	buffer[MAX_REQ_SIZE] = {0};
-	ssize_t	bytesRead = 0;
+	char		buffer[MAX_REQ_SIZE] = {0};
+	t_reqStatus &reqstatus = clientSocket._reqStatus;
 
-	if ( (bytesRead = recv(client->fd, &buffer, _maxGetSize - 1, 0)) < 0 )
-		throw std::runtime_error("Error: recv() failed");	// tbd: handle all errors -> really exit program?
-	else
-		buffer[bytesRead] = '\0';
+	ssize_t	bytesRead = recv(clientSocket._fd, &buffer, MAX_REQ_SIZE, O_NONBLOCK);
+	if ( bytesRead < 0 ) {
+		_closeConnection( clientSocket );
+		return ;
+	}
+	else if ( bytesRead == 0 )
+		//buffer[bytesRead] = '\0';
+
+	reqstatus.readBytes += bytesRead;
 	fflush( stdout );
 
 	/* TBD: review!!! (case return 0 should close the fd?!) */

@@ -272,6 +272,49 @@ void	WebServ::_acceptNewConnection( Socket &serverSocket )
 	_initPollFd( clientSocket._fd, POLLIN, 0, &_pollFds[indexFreeFd] );
 }
 
+/* _receiveRequest:
+*/
+void	WebServ::_receiveRequest( Socket &clientSocket )
+{
+	char buffer[MAX_REQ_SIZE] = {0};
+  t_reqStatus &reqstatus = socket.reqStatus;
+  bytes = recv(socket.getFd(), buffer, sizeof(buffer), O_NONBLOCK);
+  reqstatus.readBytes += bytes;
+  if (bytes == 0) return (false);
+  if (!reqstatus.pendingReceive) {
+    reqstatus.clen = parseCl(buffer);
+    reqstatus.buffer = std::string(buffer, bytes);
+    reqstatus.readBytes -= subtrHeader(buffer);
+  } else {
+    reqstatus.buffer.append(std::string(buffer, bytes));
+  }
+  if (reqstatus.readBytes >= reqstatus.clen) {
+    socket.setReqStatus();
+    return (true);
+  }
+  reqstatus.pendingReceive = true;
+  return (false);
+
+
+	char	buffer[MAX_REQ_SIZE] = {0};
+	ssize_t	bytesRead = 0;
+
+	if ( (bytesRead = recv(client->fd, &buffer, _maxGetSize - 1, 0)) < 0 )
+		throw std::runtime_error("Error: recv() failed");	// tbd: handle all errors -> really exit program?
+	else
+		buffer[bytesRead] = '\0';
+	fflush( stdout );
+
+	/* TBD: review!!! (case return 0 should close the fd?!) */
+	if ( bytesRead < _maxGetSize - 1 )
+	{
+		client->events = POLLOUT;
+		std::cout << "Request received complete" << std::endl;
+		//std::cout << buffer << std::endl;
+	}
+	else	// tbd: handle request bigger than buffer (store in internal std::string)
+		std::cout << "Request received incomplete (buffer not big enough)" << std::endl;
+}
 
 /**************************************************************/
 /*                      PUBLIC METHODS                        */
@@ -306,10 +349,10 @@ void	WebServ::serverRun()
 				_acceptNewConnection( _sockets[i] );
 			// Read requests
 			else if ( _pollFds[i].revents & POLLIN )
-				_receiveRequest( &_pollFds[i] );	// <--- CONTINUE HERE
+				_receiveRequest( _pollFds[i] );	// <--- CONTINUE HERE
 			// Send responses
 			else if ( _pollFds[i].revents & POLLOUT )
-				_sendResponse( &_pollFds[i] );
+				_sendResponse( _pollFds[i] );
 			// Check for client timeout
 			else if ( !pollError && _sockets[i]._type == CLIENT )
 				_checkTimeout( _sockets[i] );

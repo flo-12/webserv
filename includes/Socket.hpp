@@ -12,6 +12,8 @@
 
 #pragma once
 
+#include <iostream>
+
 
 typedef enum eSocketType
 {
@@ -19,6 +21,13 @@ typedef enum eSocketType
 	SERVER,
 	CLIENT
 } SocketType;
+
+typedef struct s_reqStatus {
+	bool		pendingReceive;
+	int			contentLength;
+	int			readBytes;
+	std::string	buffer;
+} t_reqStatus;
 
 class Socket
 {
@@ -29,6 +38,7 @@ class Socket
 		int				_port;
 		int				_fd;
 		SocketType		_type;
+		t_reqStatus		_reqStatus;
 
 
 	public:

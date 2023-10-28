@@ -29,7 +29,7 @@
 
 
 /************ INTERFACE TO CONFIG_PARSER ************/
-# define MAX_GET_SIZE 8192
+# define MAX_REQ_SIZE 8192
 # define MAX_CONNECTIONS 8000
 # define TIMEOUT_POLL 500
 
@@ -64,7 +64,7 @@ class WebServ
 		// Server Loop
 		bool	_pollError( short revent, Socket &socket);
 		void	_acceptNewConnection( Socket &socket );
-		//void	_receiveRequest();
+		void	_receiveRequest( Socket &socket);
 		//void	_sendResponse();
 
 		// Error / Utils

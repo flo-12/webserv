@@ -13,6 +13,7 @@
 #pragma once
 
 #include <iostream>
+#include <unistd.h>
 
 
 typedef enum eSocketType
@@ -24,10 +25,18 @@ typedef enum eSocketType
 
 typedef struct s_reqStatus {
 	bool		pendingReceive;
-	int			contentLength;	// for POST
-	int			readBytes;
+	ssize_t		contentLength;
+	ssize_t		readBytes;
 	std::string	buffer;
 } t_reqStatus;
+
+typedef struct s_resStatus {
+	bool		pendingSend;
+	ssize_t		contentLength;
+	ssize_t		sentBytes;
+	std::string	header;
+	std::string	body;
+} t_resStatus;
 
 class Socket
 {
@@ -38,13 +47,16 @@ class Socket
 		int				_port;
 		int				_fd;
 		SocketType		_type;
-		t_reqStatus		_reqStatus;
+		t_reqStatus		_request;
+		t_resStatus		_response;
 
 
 	public:
-		Socket( int fd );
+		Socket( SocketType type );
 		~Socket();
 
-		void		createRequest( std::string request );
-		std::string	buildResponse();
+		//void		createRequest( std::string request );
+		void		buildResponse();
+
+		bool	operator==( const Socket& other ) const;
 };

@@ -23,6 +23,7 @@
 #include <poll.h> // for poll
 #include <exception> // for exception
 #include <vector> // for vector
+#include <algorithm>
 
 #include "Socket.hpp"
 
@@ -33,20 +34,11 @@
 # define MAX_CONNECTIONS 8000
 # define TIMEOUT_POLL 500
 
-struct s_ipPort
+typedef struct s_ipPort
 {
 	int				port;
 	unsigned int	ip;
 } t_ipPort;
-
-const std::vector<t_ipPort> ipPortsConfig;
-t_ipPort	tmp;
-tmp.port = 18000; tmp.ip = 2130706433;
-ipPorts.push_back(tmp);
-tmp.port = 20000; tmp.ip = 2130706433;
-ipPorts.push_back(tmp);
-tmp.port = 19000; tmp.ip = 2130706434;
-ipPorts.push_back(tmp);
 
 
 /************ START CLASS ************/
@@ -58,14 +50,14 @@ class WebServ
 		std::vector<Socket>	_sockets;
 
 		// Setup / Init
-		Socket	_createServerSocket( unsigned int ip, int port );
+		Socket	_createServerSocket( unsigned int ip, int port, int pollFdIndex );
 		void	_initPollFd( int fd, short events, short revents, struct pollfd *pollFd );
 
 		// Server Loop
 		bool	_pollError( short revent, Socket &socket);
-		void	_acceptNewConnection( Socket &socket );
-		void	_receiveRequest( Socket &socket);
-		//void	_sendResponse();
+		void	_acceptNewConnection( Socket &serverSocket );
+		void	_receiveRequest( Socket &clientSocket );
+		void	_sendResponse( Socket &clientSocket );
 
 		// Error / Utils
 		void	_closeConnection( Socket &socket );

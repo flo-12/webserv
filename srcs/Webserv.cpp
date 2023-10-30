@@ -45,16 +45,49 @@ WebServ::WebServ()
 		_initPollFd( -1, 0, 0, &_pollFds[i] );
 
 	// Create all server sockets
-	for ( int i = 0; i < static_cast<int>(ipPorts.size()); ++i )
-		_sockets.push_back( _createServerSocket(ipPorts[i].ip, ipPorts[i].port, i) );
+	for ( int i = 0; i < static_cast<int>(ipPorts.size()); ++i ) {
+		Socket*	serverSocket = new Socket( SERVER );
+		serverSocket->_createServerSocket( ipPorts[i].ip, ipPorts[i].port );
+		_sockets.push_back( serverSocket);
+		
+		//_sockets.push_back( _createServerSocket(ipPorts[i].ip, ipPorts[i].port, i) );
+		std::cout << "Server socket created (ip: " << ipPorts[i].ip << ", port: " << ipPorts[i].port << ")" << std::endl;
+
+		std::vector<Socket*>::iterator it = _sockets.end() - 1;
+
+		// Add socket fd to _pollFds
+		Socket *socket = *it;
+		_initPollFd( socket->_fd, POLLIN, 0, &_pollFds[i] );
+
+		//std::cout << "[main] fd=" << socket->_fd << " port: " << socket->_port << std::endl;
+		/* if (i > 0) {
+			if (close(it->_fd) < 0)
+				throw std::runtime_error("Error: createServerSocket (close() failed)");
+			else
+				std::cout << "[main] close() success" << std::endl;
+		} */
+		
+	
+	}
+
+
+	/* for ( int i = 0; i < static_cast<int>(_sockets.size()); ++i ) {
+		std::cout << "[serverRun] fd=" << _sockets[i]._fd << std::endl;
+		if (close(_sockets[i]._fd) < 0)
+			throw std::runtime_error("Error: createServerSocket (close() failed)");
+	} */
+	
 
 	std::cout << "server initialized & listening on port" << std::endl;
+
+	//throw std::runtime_error("Error: createServerSocket (close() success)");
 }
 
 WebServ::~WebServ()
 {
-	for (std::vector<Socket>::iterator it = _sockets.begin(); it != _sockets.end(); ++it)
-		close(it->_fd);
+	std::cout << "WebServ destructor" << std::endl;
+	for (std::vector<Socket*>::iterator it = _sockets.begin(); it != _sockets.end(); ++it)
+		delete (*it);
 }
 
 /**************************************************************/
@@ -70,7 +103,7 @@ WebServ::~WebServ()
 *		- add socket fd to _pollFds
 *	Return: the created socket.
 */
-Socket	WebServ::_createServerSocket( unsigned int ip, int port, int pollFdIndex )
+/* Socket&	WebServ::_createServerSocket( unsigned int ip, int port, int pollFdIndex )
 {
 	Socket	serverSocket( SERVER );
 
@@ -103,14 +136,14 @@ Socket	WebServ::_createServerSocket( unsigned int ip, int port, int pollFdIndex 
 		throw std::runtime_error("Error: setup server (bind() failed)");
 
 	// Listen for connections on a socket (mark socket as passive)
-	if( listen(serverSocket._fd, MAX_CONNECTIONS / 2) < 0 )
+	if( listen(serverSocket._fd, MAX_CONNECTIONS) < 0 )
 		throw std::runtime_error("Error: setup server (listen() failed)");
 
 	// Add socket fd to _pollFds
 	_initPollFd( serverSocket._fd, POLLIN, 0, &_pollFds[pollFdIndex] );
 
 	return serverSocket;
-}
+} */
 
 /* _initPollFd:
 *	Initialize a pollfd struct with the given parameters.
@@ -133,25 +166,26 @@ void	WebServ::_initPollFd( int fd, short events, short revents, struct pollfd *p
 *		- create new socket and add to _sockets
 *		- add new socket to _pollFds
 */
-void	WebServ::_restartServerSocket( Socket &socket )
+void	WebServ::_restartServerSocket( Socket *socket )
 {
-	if ( socket._fd > 0 )
-		close( socket._fd );
-	std::vector<Socket>::iterator it = std::find(_sockets.begin(), _sockets.end(), socket);
-	int	i = _getIndexPollFd(socket._fd);
+	if ( socket->_fd > 0 )
+		close( socket->_fd );	
+	//std::vector<Socket>::iterator it = std::find(_sockets.begin(), _sockets.end(), socket);
+	int	i = _getIndexPollFd(socket->_fd);
 	if ( i != -1 )
-		*it = _createServerSocket( socket._ip, socket._port, _getIndexPollFd(socket._fd) );
+		socket->_createServerSocket( socket->_ip, socket->_port );
+		// *it = _createServerSocket( socket._ip, socket._port, _getIndexPollFd(socket._fd) );
 	else
-		throw std::runtime_error("Error: _restartServerSocket() failed");
+		throw std::runtime_error("Error: _restartServerSocket() failed");	// maybe restart all?
 }
 
 /* _closeConnection:
 *	Close client socket and remove from _pollFds and _sockets.
 */
-void	WebServ::_closeConnection( Socket &socket )
+void	WebServ::_closeConnection( Socket *socket )
 {
 	// Remove from _pollFds
-	int	i = _getIndexPollFd(  socket._fd );
+	int	i = _getIndexPollFd(  socket->_fd );
 	if ( i == -1 )	// socket not found -> skip shift of _pollFds (for-loop)
 		i = _sockets.size() - 1;
 	for ( ; i < static_cast<int>(_sockets.size()) - 1; ++i )
@@ -159,13 +193,15 @@ void	WebServ::_closeConnection( Socket &socket )
 	_pollFds[_sockets.size()].fd = -1;
 
 	// close fd
-	if ( socket._fd > 0 ) {
-		close( socket._fd );
-		socket._fd = -1;
+	if ( socket->_fd > 0 ) {
+		close( socket->_fd );
+		socket->_fd = -1;
 	}
 	
 	// Remove from _sockets
 	_sockets.erase( std::find(_sockets.begin(), _sockets.end(), socket) );
+
+	std::cout << "Connection closed (ip: " << socket->_ip << ", port: " << socket->_port << ", fd: " << socket->_fd << ")" << std::endl;
 }
 
 /* _getIndexPollFd:
@@ -175,7 +211,7 @@ int		WebServ::_getIndexPollFd( int fd )
 {
 	for ( int i = 0; i < MAX_CONNECTIONS; ++i )
 	{
-		if ( _sockets[i]._fd == fd )
+		if ( _pollFds[i].fd == fd )
 			return i;
 	}
 	return -1;
@@ -200,39 +236,58 @@ int	WebServ::_getFreePollFd()
 *		- close client socket if error
 *	Return: true if error, false otherwise.
 */
-bool	WebServ::_pollError( short revent, Socket &socket)
+bool	WebServ::_pollError( short revent, Socket *socket)
 {
 	bool	pollError = false;
 
-	if ( socket._type == SERVER)
+	if ( socket->_type == SERVER)
 	{
-		/* if ( revent & POLLNVAL ) {		// invalid request
-			std::cerr << "Error: POLLNVAL on poll() revent - restarting server socket" << std::endl;
+		socklen_t len = sizeof(revent);
+		if (getsockopt(socket->_fd, SOL_SOCKET, SO_ERROR, &revent, &len) < 0) {
+			std::cout << "Error: _pollError (getsocketopt() failed)" << std::endl;
+			if (errno == EBADF)
+				std::cout << "EBADF" << std::endl;
+			else if (errno == EFAULT)
+				std::cout << "EFAULT" << std::endl;
+			else if (errno == EINVAL)
+				std::cout << "EINVAL" << std::endl;
+			else if (errno == ENOPROTOOPT)
+				std::cout << "ENOPROTOOPT" << std::endl;
+			else if (errno == ENOTSOCK)
+				std::cout << "ENOTSOCK" << std::endl;
+			else
+				std::cout << "unknown errno" << std::endl;
+			
+		}
+
+		if ( revent & POLLNVAL ) {		// invalid request
+			//std::cerr << "Error: POLLNVAL on poll() revent - restarting server socket" << std::endl;
+			std::cerr << "Error: POLLNVAL for server (ip: " << socket->_ip << ", port: " << socket->_port << ", fd: " << socket->_fd << ") - restarting server socket" << std::endl;
 			pollError = true;
 		}
-		else */ if ( revent & POLLERR ) {	// error condition
+		else if ( revent & POLLERR ) {	// error condition
 			std::cerr << "Error: POLLERR on poll() revent - restarting server socket" << std::endl;
 			pollError = true;
 		}
 		else if ( revent & POLLHUP ) {	// hang up
-			std::cerr << "Error: POLLHUB on poll() revent - restarting server socket" << std::endl;
+			std::cerr << "Error: POLLHUB on poll() revent - restarting server socket (fd: " << socket->_fd << ")" << std::endl;
 			pollError = true;
 		}
 		if ( pollError )	// restart server socket
 			_restartServerSocket( socket );
 	}
-	else if ( socket._type == CLIENT )
+	else if ( socket->_type == CLIENT )
 	{
 		if ( revent & POLLNVAL ) {		// invalid request
 			std::cerr << "Error: POLLNVAL on poll() revent - closing client socket" << std::endl;
 			pollError = true;
 		}
 		else if ( revent & POLLERR ) {	// error condition
-			std::cerr << "Error: POLLERR on poll() revent - closing client socket" << std::endl;
+			std::cerr << "Error: POLLERR on poll() revent - closing client socket (fd: " << socket->_fd << ")" << std::endl;
 			pollError = true;
 		}
 		else if ( revent & POLLHUP ) {	// hang up
-			std::cerr << "Error: POLLHUB on poll() revent - closing client socket" << std::endl;
+			std::cerr << "Error: POLLHUB on poll() revent - closing client socket (fd: " << socket->_fd << ")" << std::endl;
 			pollError = true;
 		}
 		if ( pollError ) {	// close client socket & remove from _pollFds and _sockets
@@ -248,8 +303,10 @@ bool	WebServ::_pollError( short revent, Socket &socket)
 *	Accept new connection and add client to _pollFds and _sockets.
 *	Nothing happens if MAX_CONNECTIONS is reached or no free _pollFds.
 */
-void	WebServ::_acceptNewConnection( Socket &serverSocket )
+void	WebServ::_acceptNewConnection( Socket *serverSocket )
 {
+	std::cout << "Accepting new connection" << std::endl;
+
 	if ( _sockets.size() >= MAX_CONNECTIONS )	// MAX_CONNECTIONS reached
 	{
 		std::cerr << "Error: _acceptNewConnection (MAX_CONNECTIONS reached)." << std::endl;
@@ -262,16 +319,21 @@ void	WebServ::_acceptNewConnection( Socket &serverSocket )
 		return ;
 	}
 
-	Socket	clientSocket( CLIENT );
+	Socket	*clientSocket = new Socket( CLIENT );
 
-	clientSocket._fd = accept(serverSocket._fd, NULL, NULL);
-	if ( clientSocket._fd < 0 )
+	int 	fd;
+	
+	fd = accept(serverSocket->_fd, NULL, NULL);
+	std::cout << "clientFd=" << fd << " | serverFd=" << serverSocket->_fd << std::endl;
+	clientSocket->_fd = fd;
+	if ( clientSocket->_fd < 0 )
 	{
-		std::cerr << "Error: _acceptNewConnection (accept() failed)." << std::endl;
-		return ;
+		throw std::runtime_error("Error: _acceptNewConnection (accept() failed)");
+		//std::cerr << "Error: _acceptNewConnection (accept() failed)." << std::endl;
+		//return ;
 	}
 
-	if ( fcntl(clientSocket._fd, F_SETFL, O_NONBLOCK) < 0 )	// set socket to non-blocking
+	if ( fcntl(clientSocket->_fd, F_SETFL, O_NONBLOCK) < 0 )	// set socket to non-blocking
 	{
 		std::cerr << "Error: _acceptNewConnection (fcntl() failed)." << std::endl;
 		return ;
@@ -279,7 +341,7 @@ void	WebServ::_acceptNewConnection( Socket &serverSocket )
 
 	_sockets.push_back( clientSocket );
 
-	_initPollFd( clientSocket._fd, POLLIN, 0, &_pollFds[indexFreeFd] );
+	_initPollFd( clientSocket->_fd, POLLIN, 0, &_pollFds[indexFreeFd] );
 }
 
 /* _receiveRequest (1st version):
@@ -294,34 +356,39 @@ void	WebServ::_acceptNewConnection( Socket &serverSocket )
 *		- handle request bigger than buffer
 *		- handle errno of recv() (EAGAIN, EWOULDBLOCK, EINTR)
 */
-void	WebServ::_receiveRequest( Socket &clientSocket )
+void	WebServ::_receiveRequest( Socket *clientSocket )
 {
-	int		indexPollFd = _getIndexPollFd( clientSocket._fd );
+	std::cout << "Receiving request" << std::endl;
+
+	int		indexPollFd = _getIndexPollFd( clientSocket->_fd );
 	char	buffer[MAX_REQ_SIZE] = {0};
 	ssize_t	bytesRead;
 
 	// Receive request
-	if ( (bytesRead = recv(clientSocket._fd, &buffer, MAX_REQ_SIZE, O_NONBLOCK)) < 0 
+	if ( (bytesRead = recv(clientSocket->_fd, &buffer, MAX_REQ_SIZE, O_NONBLOCK)) < 0 
 		|| indexPollFd == -1 )
 	{
 		// send 500 Internal Server Error?!
 		_closeConnection( clientSocket );
 		return ;
 	}
+	else if (bytesRead == 0)
+		return ;
+	fflush( stdout );
 
 	// Check if request is complete
 	size_t	found = std::string(buffer).find("\r\n\r\n");
 	if (found != std::string::npos)
 	{
 		std::cout << "Request received complete" << std::endl;	
-		_initPollFd( clientSocket._fd, POLLOUT, 0, &_pollFds[indexPollFd] );
-		clientSocket._request.pendingReceive = false;
+		_initPollFd( clientSocket->_fd, POLLOUT, 0, &_pollFds[indexPollFd] );
+		clientSocket->_request.pendingReceive = false;
 		//clientSocket._request.contentLength = 0;
-		clientSocket._request.readBytes += bytesRead;
-		clientSocket._request.buffer += buffer;
+		clientSocket->_request.readBytes += bytesRead;
+		clientSocket->_request.buffer += buffer;
 
 		std::cout << "+++++++++++++++ Request +++++++++++++++" << std::endl;
-		std::cout << clientSocket._request.buffer << std::endl;
+		std::cout << clientSocket->_request.buffer << std::endl;
 		std::cout << "++++++++++++++++++++++++++++++++++++++++" << std::endl;
 	}
 	else
@@ -334,31 +401,34 @@ void	WebServ::_receiveRequest( Socket &clientSocket )
 	- store response in socket?
 *	- respond index.html or "Hello World"?!
 */
-void	WebServ::_sendResponse( Socket &clientSocket )
+void	WebServ::_sendResponse( Socket *clientSocket )
 {
-	clientSocket.buildResponse();
-	int		indexPollFd = _getIndexPollFd( clientSocket._fd );
+	clientSocket->buildResponse();
+	int		indexPollFd = _getIndexPollFd( clientSocket->_fd );
 
-	std::string	msgSend = clientSocket._response.header + clientSocket._response.body;
-	ssize_t	bytesSent = send(clientSocket._fd, msgSend.c_str(), msgSend.length(), 0);
+	std::string	msgSend = clientSocket->_response.header + clientSocket->_response.body;
+	ssize_t	bytesSent = send(clientSocket->_fd, msgSend.c_str(), msgSend.length(), 0);
 	if ( bytesSent < static_cast<ssize_t>(-1) || indexPollFd == -1 ) {
 		// send 500 Internal Server Error?! -> clientSocket.buildResponse(500) -> clientSocket.keepAlive = false -> _sendResponse(clientSocket)
 		_closeConnection( clientSocket );
 		return ;
 	}
-	clientSocket._response.sentBytes += bytesSent;
+	clientSocket->_response.sentBytes += bytesSent;
 
-	if ( clientSocket._response.sentBytes == clientSocket._response.contentLength )
+	if ( clientSocket->_response.sentBytes == clientSocket->_response.contentLength )
 	{
+		std::cout << "XXX Sending Response done" << std::endl;
 		//_closeConnection( clientSocket );
-		clientSocket._response.pendingSend = false;
-		_initPollFd( clientSocket._fd, POLLIN, 0, &_pollFds[indexPollFd] );
+		clientSocket->_response.pendingSend = false;
+		_initPollFd( clientSocket->_fd, POLLIN, 0, &_pollFds[indexPollFd] );
 	}
 	else
 	{
 		//_initPollFd( clientSocket._fd, POLLOUT, 0, &_pollFds[indexPollFd] );
-		clientSocket._response.pendingSend = true;
+		clientSocket->_response.pendingSend = true;
 	}
+
+	std::cout << "Sending Response done" << std::endl;
 }
 
 
@@ -387,34 +457,34 @@ void	WebServ::serverRun()
 		
 		for ( int i = 0; i < static_cast<int>(_sockets.size()); ++i )
 		{
-			if ( (indexPollFd = _getIndexPollFd( _sockets[i]._fd )) == -1 )
+			if ( (indexPollFd = _getIndexPollFd( _sockets[i]->_fd )) == -1 )
 			{
-				if ( _sockets[i]._type == SERVER ) {
+				if ( _sockets[i]->_type == SERVER ) {
 					std::cerr << "Error: serverRun() - server socket not found in _pollFds -> restart server" << std::endl;
 					_restartServerSocket( _sockets[i] );
 				}
-				else if ( _sockets[i]._type == CLIENT ) {
+				else if ( _sockets[i]->_type == CLIENT ) {
 					std::cerr << "Error: serverRun() - client socket not found in _pollFds -> close connection" << std::endl;
 					_closeConnection( _sockets[i] );
 				}
 				continue ;
-			}				
+			}
 			// Check for errors on revents and delete client socket if error
-			if ( (pollError = _pollError( _pollFds[indexPollFd].revents, _sockets[i] )) ) {
+			if ( (pollError = _pollError( _pollFds[indexPollFd].revents, _sockets[i]) ) ) {
 				;
 			}
 			// Accept new connections
-			else if ( _pollFds[indexPollFd].revents & POLLIN )
+			else if ( _pollFds[indexPollFd].revents & POLLIN && _sockets[i]->_type == SERVER )
 				_acceptNewConnection( _sockets[i] );
 			// Read requests
-			else if ( _pollFds[indexPollFd].revents & POLLIN )
+			else if ( _pollFds[indexPollFd].revents & POLLIN && _sockets[i]->_type == CLIENT )
 				_receiveRequest( _sockets[i] );
 			// Send responses
-			else if ( _pollFds[indexPollFd].revents & POLLOUT )
+			else if ( _pollFds[indexPollFd].revents & POLLOUT && _sockets[i]->_type == CLIENT )
 				_sendResponse( _sockets[i] );
 			// Check for client timeout
-			/* else if ( !pollError && _sockets[i]._type == CLIENT )
-				_checkTimeout( _sockets[i] ); */
+			// else if ( !pollError && _sockets[i]._type == CLIENT )
+			//	_checkTimeout( _sockets[i] );
 			pollError = false;
 		}
 	}

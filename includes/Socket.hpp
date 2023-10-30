@@ -14,7 +14,15 @@
 
 #include <iostream>
 #include <unistd.h>
+#include <sys/socket.h> // for socket()
+#include <netdb.h> // for struct sockaddr_in
+#include <exception> // for exception
+#include <cstring> // for memset()
+#include <fcntl.h> // for fcntl()
+#include <fstream> // for ifstream
+#include <sstream> // for stringstream
 
+# define MAX_CONNECTIONS 50
 
 typedef enum eSocketType
 {
@@ -50,13 +58,17 @@ class Socket
 		t_reqStatus		_request;
 		t_resStatus		_response;
 
+		std::string	_readFile( std::string file );
 
 	public:
 		Socket( SocketType type );
 		~Socket();
 
+		void	_createServerSocket( unsigned int ip, int port );
+
 		//void		createRequest( std::string request );
 		void		buildResponse();
+
 
 		bool	operator==( const Socket& other ) const;
 };

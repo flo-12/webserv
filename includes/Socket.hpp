@@ -22,6 +22,8 @@
 #include <fstream> // for ifstream
 #include <sstream> // for stringstream
 
+
+
 # define MAX_CONNECTIONS 50
 
 typedef enum eSocketType
@@ -31,44 +33,23 @@ typedef enum eSocketType
 	CLIENT
 } SocketType;
 
-typedef struct s_reqStatus {
-	bool		pendingReceive;
-	ssize_t		contentLength;
-	ssize_t		readBytes;
-	std::string	buffer;
-} t_reqStatus;
-
-typedef struct s_resStatus {
-	bool		pendingSend;
-	ssize_t		contentLength;
-	ssize_t		sentBytes;
-	std::string	header;
-	std::string	body;
-} t_resStatus;
 
 class Socket
 {
-	friend class WebServ;
+	//friend class WebServ;
 
-	private:
-		unsigned int	_ip;
-		int				_port;
+	protected:
 		int				_fd;
 		SocketType		_type;
-		t_reqStatus		_request;
-		t_resStatus		_response;
-
-		std::string	_readFile( std::string file );
 
 	public:
 		Socket( SocketType type );
-		~Socket();
+		virtual ~Socket();
 
-		void	_createServerSocket( unsigned int ip, int port );
+		int			getFd() const;
+		SocketType	getType() const;
 
-		//void		createRequest( std::string request );
-		void		buildResponse();
-
+		virtual void	setupSocket() = 0;
 
 		bool	operator==( const Socket& other ) const;
 };

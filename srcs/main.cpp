@@ -22,8 +22,8 @@ void	sigint_handler( int signum )
 {
 	(void)signum;
 	std::cout << std::endl << "Received CTRL+C (SIGINT) signal. Exiting..." << std::endl;
-	/* if ( webservPtr )
-		webservPtr->serverShutdown(); */
+	if ( webservPtr )
+		webservPtr->serverShutdown();
 	std::exit(EXIT_SUCCESS);
 }
 
@@ -55,7 +55,8 @@ int	main( int argc, char **argv )
 	catch( const std::exception& e )
 	{
 		std::cerr << e.what() << '\n';
-		//webserv.serverShutdown();
+		if ( webservPtr )
+			webservPtr->serverShutdown();
 		return EXIT_FAILURE;
 	}
 	

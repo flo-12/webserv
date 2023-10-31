@@ -26,12 +26,12 @@
 #include <vector> // for vector
 #include <algorithm>
 
-#include "Socket.hpp"
+#include "ServerSocket.hpp"
+#include "ClientSocket.hpp"
 
 
 
 /************ INTERFACE TO CONFIG_PARSER ************/
-# define MAX_REQ_SIZE 8192
 # define MAX_CONNECTIONS 50
 # define TIMEOUT_POLL 5000
 
@@ -55,17 +55,17 @@ class WebServ
 		void	_initPollFd( int fd, short events, short revents, struct pollfd *pollFd );
 
 		// Server Loop
-		bool	_pollError( short revent, Socket *socket);
-		void	_acceptNewConnection( Socket *serverSocket );
-		void	_receiveRequest( Socket *clientSocket );
-		void	_sendResponse( Socket *clientSocket );
+		bool	_pollError( short revent, Socket *socket );
+		void	_acceptNewConnection( ServerSocket *serverSocket );
+		void	_receiveRequest( ClientSocket *clientSocket );
+		void	_sendResponse( ClientSocket *clientSocket );
 
 		// Error / Utils
-		void	_closeConnection( Socket *socket );
-		void	_restartServerSocket( Socket *socket );
+		void	_forgetConnection( Socket *socket, HttpErrorType httpError );
+		void	_restartServerSocket( ServerSocket *socket );
+		int		_getHandleIdxPollFd( Socket *socket );
 		int		_getIndexPollFd( int fd );
 		int		_getFreePollFd();
-
 		
 	public:
 		WebServ();

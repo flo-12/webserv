@@ -16,6 +16,7 @@
 
 WebServ*	webservPtr = NULL;
 
+
 // Signal handler function for SIGINT (CTRL+C)
 void	sigint_handler( int signum )
 {
@@ -54,6 +55,8 @@ int	main( int argc, char **argv )
 	catch( const std::exception& e )
 	{
 		std::cerr << e.what() << '\n';
+		if ( webservPtr )
+			webservPtr->serverShutdown();
 		return EXIT_FAILURE;
 	}
 	

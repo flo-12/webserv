@@ -1,21 +1,21 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   socketCom.hpp                                      :+:      :+:    :+:   */
+/*   Webserv.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fbecht <fbecht@student.42berlin.de>        +#+  +:+       +#+        */
+/*   By: pdelanno <pdelanno@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/10/23 18:06:08 by fbecht            #+#    #+#             */
-/*   Updated: 2023/10/23 18:06:11 by fbecht           ###   ########.fr       */
+/*   Updated: 2023/11/01 07:49:51 by pdelanno         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #pragma once
 
 #include <iostream>
-//#include <cstdlib> // for exit()
 #include <sys/socket.h> // for socket()
 #include <netdb.h> // for struct sockaddr_in
+#include <string> // for std::string
 #include <string.h> // for bzero(), strlen()
 #include <unistd.h> // for close(), read(), write()
 #include <stdio.h> // for printf(), snprintf(), fflush()
@@ -24,43 +24,49 @@
 #include <poll.h> // for poll
 #include <exception> // for exception
 #include <vector> // for vector
+#include <algorithm>
+
+#include "ServerSocket.hpp"
+#include "ClientSocket.hpp"
+
+
 
 /************ INTERFACE TO CONFIG_PARSER ************/
-# define MAX_GET_SIZE 8192
-# define MAX_CONNECTIONS 2000
-#define TIMEOUT_POLL 500
+# define MAX_CONNECTIONS 50
+# define TIMEOUT_POLL 5000
 
-const int serverIPs[] = {2130706433, 2130706433, 2130706434}; 	/* 127.0.0.1 converted to int */
-const int serverPorts[] = {18000, 20000, 19000};
-const int nbrServers = sizeof(serverPorts) / sizeof(serverPorts[0]);
+typedef struct s_ipPort
+{
+	int				port;
+	unsigned int	ip;
+} t_ipPort;
 
 
-/* Class to run a TCP-Server
-*	- default constructor initializes the server attributes and sets up the socket
-*	- serverRun() to start the server and being able to connect with it
-*/
+/************ START CLASS ************/
+
 class WebServ
 {
 	private:
-		const int*		_serverPorts;
-		const int*		_serverIp;
-		const int		_nbrServers;
-		unsigned int	_nbrFds;
-		const int		_maxConnections;
-		const int		_maxGetSize;
-		int				_serverFds[nbrServers];
-		struct pollfd	_pollFds[MAX_CONNECTIONS];
+		struct pollfd			_pollFds[MAX_CONNECTIONS];
+		std::vector<Socket*>	_sockets;
 
-		void	_setupServer( int i );
-		void	_initFdSet( int fd );
+		// Setup / Init
+		Socket&	_createServerSocket( unsigned int ip, int port, int pollFdIndex );
+		void	_initPollFd( int fd, short events, short revents, struct pollfd *pollFd );
 
-		void		_acceptNewConnection( int serverFd );
-		void		_receiveRequest( struct pollfd *client );
-		void		_sendResponse( struct pollfd *client, unsigned int i );
-		std::string	_responseBuilder();
+		// Server Loop
+		bool	_pollError( short revent, Socket *socket );
+		void	_acceptNewConnection( ServerSocket *serverSocket );
+		void	_receiveRequest( ClientSocket *clientSocket );
+		void	_sendResponse( ClientSocket *clientSocket );
 
-		bool		_fdIsServer( int fdToFind );
-
+		// Error / Utils
+		void	_forgetConnection( Socket *socket, HttpErrorType httpError );
+		void	_restartServerSocket( ServerSocket *socket );
+		int		_getHandleIdxPollFd( Socket *socket );
+		int		_getIndexPollFd( int fd );
+		int		_getFreePollFd();
+		
 	public:
 		WebServ();
 		~WebServ();

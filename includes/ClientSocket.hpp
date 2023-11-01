@@ -14,6 +14,7 @@
 
 #include "Socket.hpp"
 #include "RequestParser.hpp"
+#include "CGIHandler.hpp"
 
 # define MAX_REQ_SIZE 8192
 
@@ -72,6 +73,7 @@ class ClientSocket : public Socket
 
 		// Response Parser
 		void	_buildResponse( std::string path );
+		void	_buildResponseCGI( std::string path );
 		std::string	_readFile( std::string path );
 	
 	public:

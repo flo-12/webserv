@@ -27,7 +27,7 @@ std::string CGIHandler::execute()
 {
     int pipefd[2];
     _args.push_back("php");
-    _args.push_back("/home/pdelanno/webserv-group/srcs/hello_world.php");
+    _args.push_back("/home/fbecht/42_Projects/Level_5/webserv/cgi-bin/hello_world.php");
     pipe(pipefd);
     char **args = new char*[_args.size() + 1];
     for (unsigned long i = 0; i < _args.size(); ++i)

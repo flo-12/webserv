@@ -136,6 +136,7 @@ ResponseStatus	ClientSocket::sendResponse()
 	std::cout << "++++++++++++++++++++++++++++++++++++++++++++++" << std::endl;
 
 	_buildResponse( requestParser.getPath() );
+	//_buildResponseCGI( requestParser.getPath() );
 	std::string	msgSend = _response.header + _response.body;
 	
 	ssize_t	bytesSent = send(_fd, msgSend.c_str(), msgSend.length(), 0);
@@ -215,6 +216,25 @@ void	ClientSocket::_buildResponse( std::string path )
 	}
 	_response.contentLength = _response.header.length() + _response.body.length();
 }
+
+/* FOR CGI-TESTING */
+void	ClientSocket::_buildResponseCGI( std::string path )
+{
+	path = "";
+	std::string output;
+	CGIHandler CGIHandler;
+	output = CGIHandler.execute();
+	_response.body = output;
+	std::stringstream	strStream;
+	strStream << (_response.body.length());
+
+	_response.header = "HTTP/1.1 200 OK\r\n";
+	_response.header += "Content-Type: text/html\r\n";
+	_response.header += "Content-Length: " + strStream.str() + "\r\n";
+	_response.header += "\r\n";
+	_response.contentLength = _response.header.length() + _response.body.length();
+}
+
 
 std::string	ClientSocket::_readFile( std::string path )
 {

@@ -193,11 +193,11 @@ bool	WebServ::_pollError( short revent, Socket *socket)
 	if ( socket->getType() == SERVER)
 	{
 		if ( revent & POLLNVAL ) {		// invalid request
-			std::cerr << "Error: POLLNVAL on poll() revent - restarting server socket" << std::endl;
+			std::cerr << "Error: POLLNVAL on poll() revent - restarting server socket (fd: " << socket->getFd() << ")" << std::endl;
 			pollError = true;
 		}
 		else if ( revent & POLLERR ) {	// error condition
-			std::cerr << "Error: POLLERR on poll() revent - restarting server socket" << std::endl;
+			std::cerr << "Error: POLLERR on poll() revent - restarting server socket (fd: " << socket->getFd() << ")" << std::endl;
 			pollError = true;
 		}
 		else if ( revent & POLLHUP ) {	// hang up
@@ -210,7 +210,7 @@ bool	WebServ::_pollError( short revent, Socket *socket)
 	else if ( socket->getType() == CLIENT )
 	{
 		if ( revent & POLLNVAL ) {		// invalid request
-			std::cerr << "Error: POLLNVAL on poll() revent - closing client socket" << std::endl;
+			std::cerr << "Error: POLLNVAL on poll() revent - closing client socket socket (fd: " << socket->getFd() << ")" << std::endl;
 			pollError = true;
 		}
 		else if ( revent & POLLERR ) {	// error condition
@@ -258,16 +258,8 @@ void	WebServ::_acceptNewConnection( ServerSocket *serverSocket )
 }
 
 /* _receiveRequest (1st version):
-*	Receive request from client and store in internal socket.t_request.buffer.
-*	1st version contains:
-*		- reading GET request only.
-*		- check for recv() errors - return is -1
-*		- assuming request is complete (no chunked transfer encoding).
-
-*	Further versions:
-*		- handle POST request (content-length, chunked transfer encoding)
-*		- handle request bigger than buffer
-*		- handle errno of recv() (EAGAIN, EWOULDBLOCK, EINTR)
+*	Receive request at client. Client handles the receiving and storing the request
+*	and returns the status of the receiving process.
 */
 void	WebServ::_receiveRequest( ClientSocket *clientSocket )
 {
@@ -287,10 +279,9 @@ void	WebServ::_receiveRequest( ClientSocket *clientSocket )
 }
 
 /* _sendResponse (1st version):
-*	Send response to client.
-*	- delete request from socket?
-*	- store response in socket?
-*	- respond index.html or "Hello World"?!
+*	Send response to client. Client handles the sending of the response and 
+*	returns the status of the sending process.
+*	Close connection if error. Set _pollFds to POLLIN in case of success.
 */
 void	WebServ::_sendResponse( ClientSocket *clientSocket )
 {
@@ -317,6 +308,7 @@ void	WebServ::_sendResponse( ClientSocket *clientSocket )
 
 /* serverRun:
 *	Server routine (infinite loop) for receiving and sending data.
+*	
 *		- poll for events and check for errors
 *		- accept new connections
 *		- read requests
@@ -351,7 +343,7 @@ void	WebServ::serverRun()
 			// Send responses
 			else if ( _pollFds[indexPollFd].revents & POLLOUT && _sockets[i]->getType() == CLIENT )
 				_sendResponse( dynamic_cast<ClientSocket*>(_sockets[i]) );
-			// Check for client timeout
+			// Check for client timeout (if no request received within XXXs)
 			// else if ( !pollError && _sockets[i]->getType() == CLIENT )
 			//	_checkTimeout( dynamic_cast<ClientSocket*>(_sockets[i]) );
 			pollError = false;

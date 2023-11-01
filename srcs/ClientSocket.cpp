@@ -88,6 +88,11 @@ void	ClientSocket::closeConnection( HttpErrorType httpError )
 *	Receives the request from the client and stores it in _request.
 *	Also checks if the request is complete or if errors occured.
 *	Returns: the status of the receive operation.
+*
+*	Further versions:
+*		- handle POST request (content-length, chunked transfer encoding)
+*		- handle request bigger than buffer
+*		- handle errno of recv() (EAGAIN, EWOULDBLOCK, EINTR) <--- DO WE NEED THAT???
 */
 ReceiveStatus	ClientSocket::receiveRequest()
 {

@@ -10,8 +10,12 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#pragma once
+#ifndef WEBSERV_HPP
+#define WEBSERV_HPP
 
+
+
+/************ INCLUDES ************/
 #include <iostream>
 #include <sys/socket.h> // for socket()
 #include <netdb.h> // for struct sockaddr_in
@@ -30,9 +34,15 @@
 #include "ClientSocket.hpp"
 
 
+/************ DEFINES ************/
+# define MAX_CONNECTIONS 500
 
-/************ INTERFACE TO CONFIG_PARSER ************/
-# define MAX_CONNECTIONS 50
+/* #ifdef MAX_CONNECTIONS
+#pragma message("MAX_CONNECTIONS is defined")
+#else
+#pragma message("MAX_CONNECTIONS is not defined")
+#endif */
+
 # define TIMEOUT_POLL 5000
 
 typedef struct s_ipPort
@@ -40,7 +50,6 @@ typedef struct s_ipPort
 	int				port;
 	unsigned int	ip;
 } t_ipPort;
-
 
 /************ START CLASS ************/
 
@@ -75,3 +84,4 @@ class WebServ
 		void	serverShutdown();
 };
 
+#endif

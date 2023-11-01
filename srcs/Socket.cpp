@@ -24,7 +24,7 @@ Socket::Socket( SocketType type )
 
 Socket::~Socket()
 {
-	std::cout << "Socket destructor (fd: " << _fd << ")" << std::endl;
+	//std::cout << "Socket destructor (fd: " << _fd << ")" << std::endl;
 	if ( _fd != -1 )
 		close(_fd);
 }

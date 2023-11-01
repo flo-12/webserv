@@ -24,5 +24,16 @@
 		<br>
 		<button type="submit">Submit</button>
 	</form>
+
+	<h1>POST File Upload</h1>
+	<form action="/submit" method="post" enctype="multipart/form-data">
+		<label for="name">Name:</label>
+		<input type="text" id="name" name="name" required>
+		<br>
+		<label for="file">File:</label>
+		<input type="file" id="file" name="file">
+		<br>
+		<button type="submit">Submit</button>
+	</form>
 </body>
 </html>

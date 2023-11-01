@@ -167,7 +167,7 @@ int	WebServ::_getHandleIdxPollFd( Socket *socket )
 	}
 }
 
-/* __getFreePollFd:
+/* _getFreePollFd:
 *	Return the index of the first free _pollFds.
 */
 int	WebServ::_getFreePollFd()
@@ -234,7 +234,7 @@ bool	WebServ::_pollError( short revent, Socket *socket)
 */
 void	WebServ::_acceptNewConnection( ServerSocket *serverSocket )
 {
-	std::cout << "Accepting new connection" << std::endl;
+	std::cout << "Accepting new connection (fd: " << serverSocket->getFd() << ")" << std::endl;
 
 	int	indexFreeFd = _getFreePollFd();
 	if ( indexFreeFd == -1 )	// no free _pollFds
@@ -263,7 +263,7 @@ void	WebServ::_acceptNewConnection( ServerSocket *serverSocket )
 */
 void	WebServ::_receiveRequest( ClientSocket *clientSocket )
 {
-	std::cout << "Receiving request" << std::endl;
+	std::cout << "Receiving request (fd: " << clientSocket->getFd() << ")" << std::endl;
 
 	int		indexPollFd = _getHandleIdxPollFd( clientSocket );
 	if ( indexPollFd == -1 )
@@ -276,6 +276,8 @@ void	WebServ::_receiveRequest( ClientSocket *clientSocket )
 		_forgetConnection( clientSocket, NO_ERROR );
 	else if ( receiveStatus == READ_DONE )
 		_initPollFd( clientSocket->getFd(), POLLOUT, 0, &_pollFds[indexPollFd] );
+	else if ( receiveStatus == READ_PENDING )
+		_initPollFd( clientSocket->getFd(), POLLIN, 0, &_pollFds[indexPollFd] );
 }
 
 /* _sendResponse (1st version):
@@ -285,7 +287,7 @@ void	WebServ::_receiveRequest( ClientSocket *clientSocket )
 */
 void	WebServ::_sendResponse( ClientSocket *clientSocket )
 {
-	std::cout << "Sending response" << std::endl;
+	std::cout << "Sending response (fd: " << clientSocket->getFd() << ")" << std::endl;
 
 	int		indexPollFd = _getHandleIdxPollFd( clientSocket );
 	if ( indexPollFd == -1 )
@@ -296,8 +298,10 @@ void	WebServ::_sendResponse( ClientSocket *clientSocket )
 		_forgetConnection( clientSocket, ERROR_400 );
 	else if ( responseStatus == SEND_DONE )
 	{
-		_initPollFd( clientSocket->getFd(), POLLIN, 0, &_pollFds[indexPollFd] );
+		_initPollFd( -1, 0, 0, &_pollFds[indexPollFd] );
 		std::cout << "Sending Response done" << std::endl;
+		_forgetConnection( clientSocket, NO_ERROR );
+		std::cout << std::endl;
 	}	
 }
 
@@ -308,7 +312,7 @@ void	WebServ::_sendResponse( ClientSocket *clientSocket )
 
 /* serverRun:
 *	Server routine (infinite loop) for receiving and sending data.
-*	
+*	Connection management: "Short-lived connections"
 *		- poll for events and check for errors
 *		- accept new connections
 *		- read requests
@@ -344,8 +348,8 @@ void	WebServ::serverRun()
 			else if ( _pollFds[indexPollFd].revents & POLLOUT && _sockets[i]->getType() == CLIENT )
 				_sendResponse( dynamic_cast<ClientSocket*>(_sockets[i]) );
 			// Check for client timeout (if no request received within XXXs)
-			// else if ( !pollError && _sockets[i]->getType() == CLIENT )
-			//	_checkTimeout( dynamic_cast<ClientSocket*>(_sockets[i]) );
+			else if ( _sockets[i]->getType() == CLIENT && dynamic_cast<ClientSocket*>(_sockets[i])->hasTimeout() )
+				_forgetConnection( _sockets[i], ERROR_408 );
 			pollError = false;
 		}
 	}

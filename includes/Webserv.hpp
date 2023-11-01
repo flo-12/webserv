@@ -1,12 +1,12 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   socketCom.hpp                                      :+:      :+:    :+:   */
+/*   Webserv.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fbecht <fbecht@student.42berlin.de>        +#+  +:+       +#+        */
+/*   By: pdelanno <pdelanno@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/10/23 18:06:08 by fbecht            #+#    #+#             */
-/*   Updated: 2023/10/23 18:06:11 by fbecht           ###   ########.fr       */
+/*   Updated: 2023/11/01 07:49:51 by pdelanno         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -54,7 +54,7 @@ class WebServ
 
 		int			_acceptNewConnection( int serverFd );
 		void		_handleConnection( int client_socket );
-		std::string	_responseBuilder();
+		std::string	_responseBuilder(std::string output);
 
 	public:
 		WebServ();

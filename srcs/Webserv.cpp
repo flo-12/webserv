@@ -1,16 +1,18 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   socketCom.cpp                                      :+:      :+:    :+:   */
+/*   Webserv.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fbecht <fbecht@student.42berlin.de>        +#+  +:+       +#+        */
+/*   By: pdelanno <pdelanno@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/10/23 18:06:16 by fbecht            #+#    #+#             */
-/*   Updated: 2023/10/23 18:06:18 by fbecht           ###   ########.fr       */
+/*   Updated: 2023/11/01 09:21:08 by pdelanno         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Webserv.hpp"
+#include "RequestParser.hpp"
+#include "CGIHandler.hpp"
 
 
 /**************************************************************/
@@ -101,30 +103,48 @@ void	WebServ::_handleConnection( int clientFd )
 {
 	char	buffer[_maxGetSize];
 	ssize_t	bytesRead;
+	std::string output;
 
 	if ( (bytesRead = recv(clientFd, &buffer, 1023, 0)) < 0 )
 		throw std::runtime_error("Error: recv() failed");
 	else
 	{
+		RequestParser rp;
 		buffer[bytesRead] = '\0';
-		std::cout << buffer << std::endl;
+		std::cout << std::endl << "***NEW REQUEST***" << std::endl;
+		try {
+			rp.parseRequest(buffer);
+		}
+		catch (std::exception &e) {
+			std::cout << e.what() << std::endl;
+		}
+		// std::cout << "---------------Request parser output: " << std::endl;
+		// std::cout << rp << std::endl;
+		// std::cout << "AT TEST: " << rp.getHeaders().at("Host") << std::endl;
+		CGIHandler cgi(rp);
+		try {
+			output = cgi.execute();
+		}
+		catch (std::exception &e) {
+			std::cout << e.what() << std::endl;
+		}
 	}
 	fflush( stdout );
 
-	if (send(clientFd, _responseBuilder().c_str(), strlen(_responseBuilder().c_str()), 0) < 0)
+	if (send(clientFd, _responseBuilder(output).c_str(), strlen(_responseBuilder(output).c_str()), 0) < 0)
 		std::cout << "Error: handle connection (send() failed)" << std::endl;
 }
 
-std::string	WebServ::_responseBuilder()
+std::string	WebServ::_responseBuilder(std::string output)
 {
 	std::string	crlf = "\r\n";
 	std::string	response;
 
 	response += "HTTP/1.1 200 OK" + crlf;			// Status-Line
 	response += "Content-Type: text/html" + crlf;	// Entity-Header-Field
-	response += "Content-Length: 12" + crlf;		// Entity-Header-Field
+	response += "Content-Length: 17" + crlf;		// Entity-Header-Field
 	response += crlf;
-	response += "Hello World" + crlf;				// message-body
+	response += output + crlf;				// message-body
 	response += crlf;
 	
 	return response;

@@ -12,15 +12,10 @@
 
 # include "../includes/RequestParser.hpp"
 
-// Requests::Requests()
-// {
-//     _requestCount = 0;
-// }
 
-// void Requests::parseRequests(std::string const &buffer)
-// {
-    
-// }
+/**************************************************************/
+/*                 DEFAULT CON-/DESTRUCTOR                    */
+/**************************************************************/
 
 RequestParser::RequestParser()
 {
@@ -29,6 +24,22 @@ RequestParser::RequestParser()
     _query = "";
     _body = "";
 }
+
+RequestParser::RequestParser(std::string buffer)
+{
+	_method = "";
+	_path = "";
+	_query = "";
+	_body = "";
+	parseRequest(buffer);
+}
+
+RequestParser::~RequestParser() {}
+
+
+/**************************************************************/
+/*                 GETTER & SETTER METHODS                    */
+/**************************************************************/
 
 std::string RequestParser::getMethod()
 {
@@ -55,7 +66,10 @@ std::string RequestParser::getBody()
     return(_body);
 }
 
-RequestParser::~RequestParser() {}
+
+/**************************************************************/
+/*                      PUBLIC METHODS                        */
+/**************************************************************/
 
 std::string RequestParser::removeCarriageReturn(std::string &str)
 {
@@ -119,6 +133,11 @@ void RequestParser::parseHeaders()
 {
     
 }
+
+
+/**************************************************************/
+/*                    OVERLOAD OPERATOR                       */
+/**************************************************************/
 
 std::ostream &operator<<(std::ostream &str, RequestParser &rp)
 {

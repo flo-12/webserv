@@ -12,8 +12,8 @@ INC			=	-I ./includes/
 
 # Sources & Objects
 SRC_DIR		= ./srcs/
-SRC_FILES	= main Webserv Socket ClientSocket ServerSocket
-SRC_FILES	= main Webserv RequestParser CGIHandler
+SRC_FILES	= main Webserv Socket ClientSocket ServerSocket RequestParser
+#SRC_FILES	+=  CGIHandler
 SRCS		= $(addprefix $(SRC_DIR),$(addsuffix .cpp,$(SRC_FILES)))
 
 OBJ_DIR		= ./.objFiles/
@@ -21,7 +21,7 @@ OBJ_FILES	= $(addsuffix .o,$(SRC_FILES))
 OBJS		= $(addprefix $(OBJ_DIR), $(OBJ_FILES))
 
 HEADER_DIR	= ./includes/
-HEADER_FILES= Webserv Socket ClientSocket ServerSocket
+HEADER_FILES= Webserv Socket ClientSocket ServerSocket RequestParser
 HEADER		= $(addprefix $(HEADER_DIR),$(addsuffix .hpp,$(HEADER_FILES)))
 
 # RULES

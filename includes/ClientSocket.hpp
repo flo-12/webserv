@@ -13,6 +13,7 @@
 #pragma once
 
 #include "Socket.hpp"
+#include "RequestParser.hpp"
 
 # define MAX_REQ_SIZE 8192
 
@@ -70,7 +71,7 @@ class ClientSocket : public Socket
 		void	_clearResponse();
 
 		// Response Parser
-		void	_buildResponse();
+		void	_buildResponse( std::string path );
 		std::string	_readFile( std::string path );
 	
 	public:

@@ -115,9 +115,9 @@ ReceiveStatus	ClientSocket::receiveRequest()
 		_request.readBytes += bytesRead;
 		_request.buffer += buffer;
 
-		std::cout << "+++++++++++++++ Request +++++++++++++++" << std::endl;
+		/* std::cout << "+++++++++++++++ Request +++++++++++++++" << std::endl;
 		std::cout << _request.buffer << std::endl;
-		std::cout << "++++++++++++++++++++++++++++++++++++++++" << std::endl;
+		std::cout << "++++++++++++++++++++++++++++++++++++++++" << std::endl; */
 
 		return READ_DONE;
 	}
@@ -130,7 +130,12 @@ ReceiveStatus	ClientSocket::receiveRequest()
 */
 ResponseStatus	ClientSocket::sendResponse()
 {
-	_buildResponse();
+	std::cout << "+++++++++++++++ Request Parser +++++++++++++++" << std::endl;
+	RequestParser	requestParser( _request.buffer );
+	std::cout << requestParser << std::endl;
+	std::cout << "++++++++++++++++++++++++++++++++++++++++++++++" << std::endl;
+
+	_buildResponse( requestParser.getPath() );
 	std::string	msgSend = _response.header + _response.body;
 	
 	ssize_t	bytesSent = send(_fd, msgSend.c_str(), msgSend.length(), 0);
@@ -167,15 +172,16 @@ ResponseStatus	ClientSocket::sendResponse()
 *		- "Hello World" in the body
 *		- status line ("HTTP/1.1 200 OK"), "Content-Length" (text/html) and "Content-Length" in the header
 */
-void	ClientSocket::_buildResponse()
+void	ClientSocket::_buildResponse( std::string path )
 {
-	std::string prefix1 = "GET / HTTP/1.1";
-	std::string prefix2 = "GET /surfer.jpeg HTTP/1.1";
-	std::string prefix3 = "GET /giga-chad-theme.mp3 HTTP/1.1";
+	std::string prefix1 = "/";
+	std::string prefix2 = "/surfer.jpeg";
+	std::string prefix3 = "/giga-chad-theme.mp3";
 
-	if (_request.buffer.find(prefix1) == 0)
+	//if (_request.buffer.find(prefix1) == 0)
+	if ( path == prefix1 )
 	{
-		_response.body = _readFile("./html/index.html");
+		_response.body = _readFile( "./html" + path + "index.html" );
 		//_response.body = "Hello World\n";
 		std::stringstream	strStream;
 		strStream << (_response.body.length());
@@ -185,9 +191,9 @@ void	ClientSocket::_buildResponse()
 		_response.header += "Content-Length: " + strStream.str() + "\r\n";
 		_response.header += "\r\n";
 	}
-	else if (_request.buffer.find(prefix2) == 0)
+	else if ( path == prefix2 )
 	{
-		_response.body = _readFile("./html/surfer.jpeg");
+		_response.body = _readFile( "./html" + path );
 		std::stringstream	strStream;
 		strStream << (_response.body.length());
 
@@ -196,9 +202,9 @@ void	ClientSocket::_buildResponse()
 		_response.header += "Content-Length: " + strStream.str() + "\r\n";
 		_response.header += "\r\n";
 	}
-	else if (_request.buffer.find(prefix3) == 0)
+	else if (  path == prefix3 )
 	{
-		_response.body = _readFile("./html/giga-chad-theme.mp3");
+		_response.body = _readFile( "./html" + path );
 		std::stringstream	strStream;
 		strStream << (_response.body.length());
 

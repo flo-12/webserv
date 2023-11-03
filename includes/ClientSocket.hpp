@@ -15,7 +15,8 @@
 #include "common.hpp"
 #include "Socket.hpp"
 #include "RequestParser.hpp"
-#include "CGIHandler.hpp"
+//#include "CGIHandler.hpp"
+#include "Response.hpp"
 #include <ctime>
 
 //# define MAX_REQ_SIZE 8192
@@ -81,9 +82,6 @@ class ClientSocket : public Socket
 		bool	_requestComplete();
 
 		// Response Parser
-		void	_buildResponse( std::string path );
-		void	_buildResponseCGI( std::string path );
-		std::string	_readFile( std::string path );
 		void	_saveFile( std::string path, std::string content );
 	
 	public:

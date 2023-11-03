@@ -185,8 +185,13 @@ ResponseStatus	ClientSocket::sendResponse()
 	//std::cout << requestParser << std::endl;
 	//std::cout << "++++++++++++++++++++++++++++++++++++++++++++++" << std::endl;
 
-	_buildResponse( requestParser.getPath() );
+	//_buildResponse( requestParser.getPath() );
 	//_buildResponseCGI( requestParser.getPath() );
+	Response	response( requestParser.getPath() );
+	_response.header = response.getHeader();
+	_response.body = response.getBody();
+	_response.contentLength = response.getLength();
+
 	std::string	msgSend = _response.header + _response.body;
 	
 	ssize_t	bytesSent = send(_fd, msgSend.c_str(), msgSend.length(), 0);
@@ -216,96 +221,6 @@ ResponseStatus	ClientSocket::sendResponse()
 /**************************************************************/
 /*                    RESPONSE PARSER                         */
 /**************************************************************/
-
-/* buildResponse():
-*	Built the response corresponding to the _request and stores it in _response.
-*	1st draft contains:
-*		- filling out all values from _request
-*		- "Hello World" in the body
-*		- status line ("HTTP/1.1 200 OK"), "Content-Length" (text/html) and "Content-Length" in the header
-*/
-void	ClientSocket::_buildResponse( std::string path )
-{
-	std::string prefix1 = "/";
-	std::string prefix2 = "/surfer.jpeg";
-	std::string prefix3 = "/giga-chad-theme.mp3";
-
-	//if (_request.buffer.find(prefix1) == 0)
-	if ( path == prefix1 )
-	{
-		_response.body = _readFile( "./html" + path + "index.html" );
-		//_response.body = "Hello World\n";
-		std::stringstream	strStream;
-		strStream << (_response.body.length());
-
-		_response.header = "HTTP/1.1 200 OK\r\n";
-		_response.header += "Content-Type: text/html\r\n";
-		_response.header += "Content-Length: " + strStream.str() + "\r\n";
-		_response.header += "Connection: close\r\n";
-		_response.header += "\r\n";
-	}
-	else if ( path == prefix2 )
-	{
-		_response.body = _readFile( "./html" + path );
-		std::stringstream	strStream;
-		strStream << (_response.body.length());
-
-		_response.header = "HTTP/1.1 200 OK\r\n";
-		_response.header += "Content-Type: image/*\r\n";
-		_response.header += "Content-Length: " + strStream.str() + "\r\n";
-		_response.header += "Connection: close\r\n";
-		_response.header += "\r\n";
-	}
-	else if (  path == prefix3 )
-	{
-		_response.body = _readFile( "./html" + path );
-		std::stringstream	strStream;
-		strStream << (_response.body.length());
-
-		_response.header = "HTTP/1.1 200 OK\r\n";
-		_response.header += "Content-Type: audio/*\r\n";
-		_response.header += "Content-Length: " + strStream.str() + "\r\n";
-		_response.header += "Connection: close\r\n";
-		_response.header += "\r\n";
-	}
-	_response.contentLength = _response.header.length() + _response.body.length();
-}
-
-/* FOR CGI-TESTING */
-void	ClientSocket::_buildResponseCGI( std::string path )
-{
-	path = "";
-	std::string output;
-	CGIHandler CGIHandler;
-	output = CGIHandler.execute();
-	_response.body = output;
-	std::stringstream	strStream;
-	strStream << (_response.body.length());
-
-	_response.header = "HTTP/1.1 200 OK\r\n";
-	_response.header += "Content-Type: text/html\r\n";
-	_response.header += "Content-Length: " + strStream.str() + "\r\n";
-	_response.header += "\r\n";
-	_response.contentLength = _response.header.length() + _response.body.length();
-}
-
-
-std::string	ClientSocket::_readFile( std::string path )
-{
-	//std::cout << "Reading file: " << path << std::endl;
-	std::string		line;
-	std::string		body;
-	std::ifstream	ifs(path.c_str());
-
-	if ( !ifs.is_open() )
-		throw std::runtime_error("Error: readFile() failed");
-
-	while ( getline( ifs, line ) )
-		body += line + "\n";
-	ifs.close();
-
-	return body;
-}
 
 void	ClientSocket::_saveFile( std::string path, std::string content )
 {

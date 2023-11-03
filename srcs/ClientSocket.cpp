@@ -27,7 +27,7 @@ ClientSocket::ClientSocket( int serverFd )
 
 ClientSocket::~ClientSocket()
 {
-	std::cout << "ClientSocket destructor (fd: " << _fd << ", serverFd: " << _serverFd << ")" << std::endl;
+	//std::cout << "ClientSocket destructor (fd: " << _fd << ", serverFd: " << _serverFd << ")" << std::endl;
 }
 
 
@@ -106,7 +106,7 @@ bool	ClientSocket::_requestComplete()
 */
 void	ClientSocket::closeConnection( HttpErrorType httpError )
 {
-	std::cout << "ClientSocket::closeConnection() with httpError: " << httpError << std::endl;
+	std::cout << "\tClientSocket::closeConnection() with httpError: " << httpError << "\n" << std::endl;
 }
 
 /* hasTimeout:
@@ -201,7 +201,7 @@ ResponseStatus	ClientSocket::sendResponse()
 		_response.pendingSend = false;
 		_clearRequest();
 		_clearResponse();
-				
+
 		return SEND_DONE;
 	}
 	else
@@ -292,7 +292,7 @@ void	ClientSocket::_buildResponseCGI( std::string path )
 
 std::string	ClientSocket::_readFile( std::string path )
 {
-	std::cout << "Reading file: " << path << std::endl;
+	//std::cout << "Reading file: " << path << std::endl;
 	std::string		line;
 	std::string		body;
 	std::ifstream	ifs(path.c_str());

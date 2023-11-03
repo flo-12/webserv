@@ -30,26 +30,10 @@
 #include <vector> // for vector
 #include <algorithm>
 
+#include "common.hpp"
 #include "ServerSocket.hpp"
 #include "ClientSocket.hpp"
 
-
-/************ DEFINES ************/
-# define MAX_CONNECTIONS 500
-
-/* #ifdef MAX_CONNECTIONS
-#pragma message("MAX_CONNECTIONS is defined")
-#else
-#pragma message("MAX_CONNECTIONS is not defined")
-#endif */
-
-# define TIMEOUT_POLL 5000
-
-typedef struct s_ipPort
-{
-	int				port;
-	unsigned int	ip;
-} t_ipPort;
 
 /************ START CLASS ************/
 
@@ -77,7 +61,7 @@ class WebServ
 		int		_getFreePollFd();
 		
 	public:
-		WebServ();
+		WebServ( std::vector<t_ipPort> configInfo );
 		~WebServ();
 		
 		void	serverRun();

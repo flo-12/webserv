@@ -12,13 +12,14 @@
 
 #pragma once
 
+#include "common.hpp"
 #include "Socket.hpp"
 #include "RequestParser.hpp"
 #include "CGIHandler.hpp"
 #include <ctime>
 
-# define MAX_REQ_SIZE 8192
-# define TIMEOUT_RECEIVE 8192
+//# define MAX_REQ_SIZE 8192
+//# define TIMEOUT_RECEIVE 8192
 
 typedef struct s_reqStatus {
 	time_t		startTime;

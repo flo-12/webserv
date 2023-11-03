@@ -21,12 +21,12 @@ ServerSocket::ServerSocket( unsigned int ip, int port )
 {
 	setupSocket();
 
-	std::cout << "Server socket created (ip: " << _ip << ", port: " << _port << ")" << std::endl;
+	//std::cout << "Server socket created (ip: " << _ip << ", port: " << _port << ")" << std::endl;
 }
 
 ServerSocket::~ServerSocket()
 {
-	std::cout << "ServerSocket destructor (ip: " << _ip << ", port: " << _port << ")" << std::endl;
+	//std::cout << "ServerSocket destructor (ip: " << _ip << ", port: " << _port << ")" << std::endl;
 }
 
 
@@ -54,7 +54,7 @@ void	ServerSocket::setupSocket()
 	if ( setsockopt(_fd, SOL_SOCKET,  SO_REUSEADDR | SO_REUSEPORT,
 				&on, sizeof(int)) < 0 )
 		throw std::runtime_error("Error: createServerSocket (setsockopt() failed)");
-	
+
 	// Set socket to non-blocking
 	if( fcntl(_fd, F_SETFL, O_NONBLOCK) < 0 )
 		throw std::runtime_error("Error: createServerSocket (fcntl() failed)");

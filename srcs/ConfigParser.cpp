@@ -10,15 +10,15 @@ void    ConfigParser::print(void) const
     }
 }
 
-std::vector<t_ip_port> ConfigParser::getIpPort(void)
+std::vector<t_ipPort> ConfigParser::getIpPort(void)
 {
-    std::vector<t_ip_port>    vecIpPort;
+    std::vector<t_ipPort>    vecIpPort;
 
     for (size_t i = 0; i < _serverConfigs.size(); i++)
     {
         for (size_t j = 0; j < _serverConfigs[i]._ports.size(); j++)
         {
-            t_ip_port tmp;
+            t_ipPort tmp;
             tmp.ip = _serverConfigs[i]._decimalIPaddress;
             tmp.port = _serverConfigs[i]._ports[j];
             vecIpPort.push_back(tmp);

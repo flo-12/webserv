@@ -23,7 +23,9 @@
 #include <fstream> // for ifstream
 #include <sstream> // for stringstream
 
-# define MAX_CONNECTIONS 500
+#include "common.hpp"
+
+//# define MAX_CONNECTIONS 500
 
 /* #ifdef MAX_CONNECTIONS
 #pragma message("MAX_CONNECTIONS is defined")

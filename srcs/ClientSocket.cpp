@@ -187,7 +187,10 @@ ResponseStatus	ClientSocket::sendResponse()
 
 	//_buildResponse( requestParser.getPath() );
 	//_buildResponseCGI( requestParser.getPath() );
+	
 	Response	response( requestParser.getPath() );
+	//Response	response( requestParser.getHeaders() );
+
 	_response.header = response.getHeader();
 	_response.body = response.getBody();
 	_response.contentLength = response.getLength();

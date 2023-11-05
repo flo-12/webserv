@@ -7,12 +7,15 @@
 #include <stdexcept>
 #include <string>
 
+#define PROTOCOL_VERSION "HTTP/1.1"
 
 class Response
 {
 	private:
 		std::string							_path;
-		std::map<std::string, std::string>	_request;
+		std::map<std::string, std::string>	_requestHeader;
+		int									_httpStatus;
+		std::string							_msgStatusLine;
 		std::string							_msgHeader;
 		std::string							_msgBody;
 		ssize_t								_msgLength;
@@ -23,6 +26,7 @@ class Response
 
 	public:
 		Response( std::string path );
+		Response( std::map<std::string, std::string> );
 		~Response();
 	
 		std::string	getHeader() const;

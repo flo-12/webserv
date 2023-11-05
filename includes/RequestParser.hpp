@@ -25,23 +25,24 @@ class RequestParser
             RequestParser();
             RequestParser(std::string buffer);
             ~RequestParser();
-            void parseRequest(std::string const &buffer);
-            std::string getMethod();
-            std::string getPath();
-            std::string getQuery();
-            std::string getProtocol();
-            std::string getBody();
-            std::map<std::string, std::string> getHeaders();
+            
+			void		parseRequest(std::string const &buffer);
+            std::string	getMethod();
+            std::string	getPath();
+            std::string	getQuery();
+            std::string	getProtocol();
+            std::string	getBody();
+            std::map<std::string, std::string>	getHeaders();
 
-            std::string removeCarriageReturn(std::string &str);
+            std::string	removeCarriageReturn(std::string &str);
 
     private:
-            std::string _method;
-            std::string _path;
-            std::string _query;
-            std::string _protocol;
-            std::map<std::string, std::string> _headers;
-            std::string _body;
+            std::string	_method;
+            std::string	_path;
+            std::string	_query;
+            std::string	_protocol;
+            std::map<std::string, std::string>	_headers;
+            std::string	_body;
 
             void parseHeaders();
 };

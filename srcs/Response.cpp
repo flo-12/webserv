@@ -11,6 +11,12 @@ Response::Response( std::string _path )
 	_buildResponse( _path );
 }
 
+/* Response::Response( std::map<std::string, std::string> )
+	: 
+{
+	_buildResponse( _path );
+} */
+
 Response::~Response()
 {
 	
@@ -23,7 +29,7 @@ Response::~Response()
 
 std::string	Response::getHeader() const
 {
-	return _msgHeader;
+	return _msgStatusLine + _msgHeader;
 }
 
 std::string	Response::getBody() const
@@ -63,8 +69,9 @@ void	Response::_buildResponse( std::string path )
 		std::stringstream	strStream;
 		strStream << (_msgBody.length());
 
-		_msgHeader = "HTTP/1.1 200 OK\r\n";
-		_msgHeader += "Content-Type: text/html\r\n";
+		_msgStatusLine = PROTOCOL_VERSION; 
+		_msgStatusLine += " 200 OK\r\n";
+		_msgHeader += "Content-Type: text/html\r\n";	
 		_msgHeader += "Content-Length: " + strStream.str() + "\r\n";
 		_msgHeader += "Connection: close\r\n";
 		_msgHeader += "\r\n";
@@ -75,7 +82,8 @@ void	Response::_buildResponse( std::string path )
 		std::stringstream	strStream;
 		strStream << (_msgBody.length());
 
-		_msgHeader = "HTTP/1.1 200 OK\r\n";
+		_msgStatusLine = PROTOCOL_VERSION; 
+		_msgStatusLine += " 200 OK\r\n";
 		_msgHeader += "Content-Type: image/*\r\n";
 		_msgHeader += "Content-Length: " + strStream.str() + "\r\n";
 		_msgHeader += "Connection: close\r\n";
@@ -87,13 +95,14 @@ void	Response::_buildResponse( std::string path )
 		std::stringstream	strStream;
 		strStream << (_msgBody.length());
 
-		_msgHeader = "HTTP/1.1 200 OK\r\n";
+		_msgStatusLine = PROTOCOL_VERSION; 
+		_msgStatusLine += " 200 OK\r\n";
 		_msgHeader += "Content-Type: audio/*\r\n";
 		_msgHeader += "Content-Length: " + strStream.str() + "\r\n";
 		_msgHeader += "Connection: close\r\n";
 		_msgHeader += "\r\n";
 	}
-	_msgLength = _msgHeader.length() + _msgBody.length();
+	_msgLength = _msgStatusLine.length() + _msgHeader.length() + _msgBody.length();
 }
 
 /* FOR CGI-TESTING */
@@ -106,11 +115,11 @@ void	Response::_buildResponseCGI( std::string path )
 	std::stringstream	strStream;
 	strStream << (_msgBody.length());
 
-	_msgHeader = "HTTP/1.1 200 OK\r\n";
+	_msgStatusLine = "HTTP/1.1 200 OK\r\n";
 	_msgHeader += "Content-Type: text/html\r\n";
 	_msgHeader += "Content-Length: " + strStream.str() + "\r\n";
 	_msgHeader += "\r\n";
-	_msgLength = _msgHeader.length() + _msgBody.length();
+	_msgLength = _msgStatusLine.length() + _msgHeader.length() + _msgBody.length();
 }
 
 

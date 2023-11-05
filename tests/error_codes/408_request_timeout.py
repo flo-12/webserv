@@ -23,17 +23,16 @@ print("Connected to the server")
 # Send the HTTP request
 client_socket.send(http_request.encode())
 
-# Receive and read the server's response
-response_data = b""
-while True:
-    chunk = client_socket.recv(4096)  # Adjust buffer size as needed
-    if not chunk:
-        break
-    response_data += chunk
+# here the server sent a request but does not perform a reading using
+# recv() so after a while the server should send an error 408 to
+# stop trying to write to the client
 
-# Print the server's response
-print("Server Response:")
-print(response_data.decode())
+# Simulate a request timeout by not reading the server's response
+print("Simulating a request timeout...")
+
+# Sleep for a duration longer than the specified timeout
+timeout_duration = 65  # Ensure this is longer than the Timeout header value
+time.sleep(timeout_duration)
 
 # Close the socket to end the connection
 client_socket.close()

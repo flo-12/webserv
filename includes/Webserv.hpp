@@ -10,8 +10,12 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#pragma once
+#ifndef WEBSERV_HPP
+#define WEBSERV_HPP
 
+
+
+/************ INCLUDES ************/
 #include <iostream>
 #include <sys/socket.h> // for socket()
 #include <netdb.h> // for struct sockaddr_in
@@ -26,20 +30,9 @@
 #include <vector> // for vector
 #include <algorithm>
 
+#include "common.hpp"
 #include "ServerSocket.hpp"
 #include "ClientSocket.hpp"
-
-
-
-/************ INTERFACE TO CONFIG_PARSER ************/
-# define MAX_CONNECTIONS 50
-# define TIMEOUT_POLL 5000
-
-typedef struct s_ipPort
-{
-	int				port;
-	unsigned int	ip;
-} t_ipPort;
 
 
 /************ START CLASS ************/
@@ -68,10 +61,11 @@ class WebServ
 		int		_getFreePollFd();
 		
 	public:
-		WebServ();
+		WebServ( std::vector<t_ipPort> configInfo );
 		~WebServ();
 		
 		void	serverRun();
 		void	serverShutdown();
 };
 
+#endif

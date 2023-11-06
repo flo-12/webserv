@@ -10,6 +10,8 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+#include "../includes/common.hpp"
+#include "../includes/ConfigParser.hpp"
 #include "../includes/Webserv.hpp"
 #include <cstdlib>	// for EXIT_SUCCESS and EXIT_FAILURE
 #include <csignal>	// for signal()
@@ -29,16 +31,18 @@ void	sigint_handler( int signum )
 
 int	main( int argc, char **argv )
 {
-	if (argc == 255)
-		return EXIT_FAILURE;
-	(void)argv;
-	/* if ( argc == 1 )		// default confid-File
-	{}
+	std::string		configFile;
+
+	if ( argc == 1 )		// default config-File
+		configFile = "configs/default.conf";
 	else if ( argc == 2 )	// config-File at argv[1]
-	{}
+		configFile = argv[1];
 	else					// wrong usage
-	{} */
-	
+	{
+		std::cerr << "Usage: " << argv[0] << " [config-file]" << std::endl;
+		return EXIT_FAILURE;
+	}
+
 	if ( signal(SIGINT, sigint_handler) == SIG_ERR )
 	{
 		std::cerr << "Error setting up signal handler" << std::endl;
@@ -47,7 +51,9 @@ int	main( int argc, char **argv )
 	
 	try
 	{
-		WebServ webserv;
+		ConfigParser	config( configFile );
+
+		WebServ webserv( config.getIpPort() );
 		webservPtr = &webserv;
 
 		webserv.serverRun();

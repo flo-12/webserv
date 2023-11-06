@@ -10,7 +10,8 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#pragma once
+#ifndef SOCKET_HPP
+#define SOCKET_HPP
 
 #include <iostream>
 #include <unistd.h>
@@ -22,9 +23,15 @@
 #include <fstream> // for ifstream
 #include <sstream> // for stringstream
 
+#include "common.hpp"
 
+//# define MAX_CONNECTIONS 500
 
-# define MAX_CONNECTIONS 50
+/* #ifdef MAX_CONNECTIONS
+#pragma message("MAX_CONNECTIONS is defined")
+#else
+#pragma message("MAX_CONNECTIONS is not defined")
+#endif */
 
 typedef enum eSocketType
 {
@@ -53,3 +60,5 @@ class Socket
 
 		bool	operator==( const Socket& other ) const;
 };
+
+#endif

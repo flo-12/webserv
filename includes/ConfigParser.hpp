@@ -12,7 +12,7 @@ class ConfigParser
 {
 public:
     // public methods
-    std::vector<t_ip_port>  getIpPort(void);
+    std::vector<t_ipPort>  getIpPort(void);
     void                    print(void) const;
 
     // Getters and Setters

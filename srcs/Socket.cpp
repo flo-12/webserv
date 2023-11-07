@@ -17,8 +17,8 @@
 /*                 DEFAULT CON-/DESTRUCTOR                    */
 /**************************************************************/
 
-Socket::Socket( SocketType type )
-	: _type(type)
+Socket::Socket( SocketType type, ServerConfig config )
+	: _type(type), _config(config)
 {
 }
 
@@ -42,6 +42,11 @@ int			Socket::getFd() const
 SocketType	Socket::getType() const
 {
 	return _type;
+}
+
+ServerConfig	Socket::getConfig() const
+{
+	return _config;
 }
 
 

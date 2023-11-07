@@ -54,7 +54,7 @@ class WebServ
 		void	_sendResponse( ClientSocket *clientSocket );
 
 		// Error / Utils
-		void	_forgetConnection( Socket *socket, HttpErrorType httpError );
+		void	_forgetConnection( Socket *socket, HttpStatusCode httpStatus );
 		void	_restartServerSocket( ServerSocket *socket );
 		int		_getHandleIdxPollFd( Socket *socket );
 		int		_getIndexPollFd( int fd );

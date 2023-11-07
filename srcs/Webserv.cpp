@@ -17,7 +17,7 @@
 /*                 DEFAULT CON-/DESTRUCTOR                    */
 /**************************************************************/
 
-WebServ::WebServ( std::vector<t_ipPort> configInfo )
+WebServ::WebServ( std::vector<t_ipPort> configInfo, std::vector<ServerConfig> _serverConfigs )
 {
 	// Check for errors in Config Parser output
 	if ( configInfo.empty() )
@@ -31,7 +31,7 @@ WebServ::WebServ( std::vector<t_ipPort> configInfo )
 
 	// Create all server sockets and add fd to _pollFds
 	for ( int i = 0; i < static_cast<int>(configInfo.size()); ++i ) {
-		ServerSocket*	serverSocket = new ServerSocket( configInfo[i].ip, configInfo[i].port );
+		ServerSocket*	serverSocket = new ServerSocket( configInfo[i].ip, configInfo[i].port, _serverConfigs[i] );
 		_sockets.push_back( serverSocket );
 
 		_initPollFd( serverSocket->getFd(), POLLIN, 0, &_pollFds[i] );
@@ -90,16 +90,16 @@ void	WebServ::_restartServerSocket( ServerSocket *socket )
 /* _forgetConnection:
 *	Remove socket->_fd from _pollFds, eras from _sockets and delete instance.
 */
-void	WebServ::_forgetConnection( Socket *socket, HttpErrorType httpError )
+void	WebServ::_forgetConnection( Socket *socket, HttpStatusCode httpStatus )
 {
 	//std::cout << "Socket forgetting (fd: " << socket->getFd() << ")" << std::endl;
 
 	// Send error page if client socket
 	if ( socket->getType() == CLIENT )
-		dynamic_cast<ClientSocket*>(socket)->closeConnection(httpError);
+		dynamic_cast<ClientSocket*>(socket)->closeConnection(httpStatus);
 
 	// Remove from _pollFds
-	int	i = _getIndexPollFd(  socket->getFd() );
+	int	i = _getIndexPollFd( socket->getFd() );
 	if ( i != -1 )
 	{
 		for ( ; i < static_cast<int>(_sockets.size()) - 1; ++i )
@@ -146,7 +146,7 @@ int	WebServ::_getHandleIdxPollFd( Socket *socket )
 		}
 		else if ( socket->getType() == CLIENT ) {
 			std::cerr << "Error: serverRun() - client socket not found in _pollFds -> close connection" << std::endl;
-			_forgetConnection( socket, ERROR_500 );
+			_forgetConnection( socket, STATUS_500 );
 		}
 		return -1;
 	}
@@ -207,7 +207,7 @@ bool	WebServ::_pollError( short revent, Socket *socket)
 			pollError = true;
 		}
 		if ( pollError )	// close client socket & remove from _pollFds and _sockets
-			_forgetConnection( socket, ERROR_500 );
+			_forgetConnection( socket, STATUS_500 );
 	}
 
 	return pollError;
@@ -228,7 +228,7 @@ void	WebServ::_acceptNewConnection( ServerSocket *serverSocket )
 		return ;
 	}
 
-	Socket	*clientSocket = new ClientSocket( serverSocket->getFd() );
+	Socket	*clientSocket = new ClientSocket( serverSocket->getFd(), serverSocket->getConfig() );
 	try
 	{
 		clientSocket->setupSocket();
@@ -256,7 +256,7 @@ void	WebServ::_receiveRequest( ClientSocket *clientSocket )
 
 	ReceiveStatus	receiveStatus = clientSocket->receiveRequest();
 	if ( receiveStatus == READ_ERROR )
-		_forgetConnection( clientSocket, ERROR_400 );
+		_forgetConnection( clientSocket, STATUS_400 );
 	else if ( receiveStatus == CLIENT_CLOSED )
 		_forgetConnection( clientSocket, NO_ERROR );
 	else if ( receiveStatus == READ_DONE )
@@ -280,7 +280,7 @@ void	WebServ::_sendResponse( ClientSocket *clientSocket )
 
 	ResponseStatus	responseStatus = clientSocket->sendResponse();
 	if ( responseStatus == SEND_ERROR )
-		_forgetConnection( clientSocket, ERROR_400 );
+		_forgetConnection( clientSocket, STATUS_400 );
 	else if ( responseStatus == SEND_DONE )
 	{
 		_initPollFd( -1, 0, 0, &_pollFds[indexPollFd] );
@@ -334,7 +334,7 @@ void	WebServ::serverRun()
 				_sendResponse( dynamic_cast<ClientSocket*>(_sockets[i]) );
 			// Check for client timeout (if no request received within XXXs)
 			else if ( _sockets[i]->getType() == CLIENT && dynamic_cast<ClientSocket*>(_sockets[i])->hasTimeout() )
-				_forgetConnection( _sockets[i], ERROR_408 );
+				_forgetConnection( _sockets[i], STATUS_408 );
 			pollError = false;
 		}
 	}

@@ -1,35 +1,78 @@
+#pragma once
+
 #include "common.hpp"
 #include "CGIHandler.hpp"
+#include "ServerConfig.hpp"
+#include "RequestParser.hpp"
 #include <iostream>
 #include <map>
+#include <vector>
 #include <sstream>
 #include <fstream>
 #include <stdexcept>
 #include <string>
+#include <cstdio>
+#include <unistd.h>
 
-#define PROTOCOL_VERSION "HTTP/1.1"
+
+typedef struct s_StatusLine
+{
+	std::string		protocolVersion;
+	HttpStatusCode	statusCode;
+	std::string		reasonPhrase;
+} t_StatusLine;
+
+typedef struct s_paths
+{
+	std::string	requestUri;
+	std::string	confLocKey;
+	std::string	responseUri;	// /html/index.html
+} t_paths;
+
+
 
 class Response
 {
 	private:
-		std::string							_path;
-		std::map<std::string, std::string>	_requestHeader;
-		int									_httpStatus;
-		std::string							_msgStatusLine;
-		std::string							_msgHeader;
-		std::string							_msgBody;
-		ssize_t								_msgLength;
+		httpMethod							_method;
+		RequestParser						_request;		
+		ServerConfig						_config;
 
-		void		_buildResponse( std::string path );
-		void		_buildResponseCGI( std::string path );
-		std::string	_readFile( std::string path );
+		t_paths								_paths;
+		std::map<int, std::string>			_httpStatusCodeLookup;
+
+		t_StatusLine						_msgStatusLine;
+		std::map<std::string, std::string>	_msgHeader;
+			// Content-Length
+			// Location
+		std::string							_msgBody;
+		ssize_t								_msgBodyLength;
+
+		//HttpStatusCode						_httpStatus;
+		//std::string							_msgStatusLine;
+		//std::string							_msgHeader;
+
+		void	_readHttpStatusCodeDatabase();
+
+		bool	_checkPreconditions();
+		bool	_checkRedirection();
+
+		void	_handleGet();
+		void	_readFile( std::string path );
+
+		// Prototyping
+		// void		_buildResponse( std::string path );
+		// void		_buildResponseCGI( std::string path );
+		// void		_saveFile( std::string path, std::string content );		
 
 	public:
-		Response( std::string path );
-		Response( std::map<std::string, std::string> );
+		Response( RequestParser request, ServerConfig config );
+		Response( std::map<std::string );
 		~Response();
 	
-		std::string	getHeader() const;
-		std::string	getBody() const;
-		ssize_t		getLength() const;
+		// Getters
+		std::string	getResponseMsg() const;
+		std::string	getMsgHeader() const;
+		ssize_t		getMsgLength() const;
+
 } ;

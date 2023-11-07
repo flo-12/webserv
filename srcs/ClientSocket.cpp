@@ -17,8 +17,8 @@
 /*                 DEFAULT CON-/DESTRUCTOR                    */
 /**************************************************************/
 
-ClientSocket::ClientSocket( int serverFd )
-	: Socket( CLIENT ), _serverFd(serverFd)
+ClientSocket::ClientSocket( int serverFd, ServerConfig config )
+	: Socket( CLIENT, config ), _serverFd(serverFd)
 {
 	_startTime = time(0);
 	_clearRequest();
@@ -67,11 +67,11 @@ void	ClientSocket::_clearRequest()
 void	ClientSocket::_clearResponse()
 {
 	_response.startTime = time(0);
+	_response.startSending = false;
 	_response.pendingSend = false;
-	_response.contentLength = 0;
+	_response.msgLength = 0;
 	_response.sentBytes = 0;
-	_response.header.clear();
-	_response.body.clear();
+	_response.message.clear();
 }
 
 
@@ -102,11 +102,30 @@ bool	ClientSocket::_requestComplete()
 /**************************************************************/
 
 /* closeConnection:
-*	Sends the error page matching the HttpErrorType passed as argument.
+*	Sends the error page matching the HttpStatusCode passed as argument.
 */
-void	ClientSocket::closeConnection( HttpErrorType httpError )
+void	ClientSocket::closeConnection( HttpStatusCode httpStatus )
 {
-	std::cout << "\tClientSocket::closeConnection() with httpError: " << httpError << "\n" << std::endl;
+	if ( httpStatus != NO_ERROR )
+	{
+		try
+		{
+			Response	response( httpStatus );	// to be implemented
+	
+			_response.message = response.getResponseMsg();
+			_response.msgLength = response.getMsgLength();
+		}
+		catch( const std::exception& e )
+		{
+			_response.message = "HTTP/1.1 500 Internal Server Error\r\n\r\n";
+			_response.msgLength = _response.message.length();
+			std::cerr << e.what() << '\n';
+		}
+		_response.startSending = true;
+		sendResponse();
+	}
+
+	std::cout << "\tClientSocket::closeConnection() with httpStatus: " << httpStatus << "\n" << std::endl;
 }
 
 /* hasTimeout:
@@ -177,34 +196,34 @@ ReceiveStatus	ClientSocket::receiveRequest()
 */
 ResponseStatus	ClientSocket::sendResponse()
 {
-	// Update startTime
-	_response.startTime = time(0);
+	if ( !_response.startSending ) {
+		_response.startTime = time(0);
 
-	//std::cout << "+++++++++++++++ Request Parser +++++++++++++++" << std::endl;
-	RequestParser	requestParser( _request.buffer );
-	//std::cout << requestParser << std::endl;
-	//std::cout << "++++++++++++++++++++++++++++++++++++++++++++++" << std::endl;
-
-	//_buildResponse( requestParser.getPath() );
-	//_buildResponseCGI( requestParser.getPath() );
+		RequestParser	requestParser( _request );
 	
-	Response	response( requestParser.getPath() );
-	//Response	response( requestParser.getHeaders() );
-
-	_response.header = response.getHeader();
-	_response.body = response.getBody();
-	_response.contentLength = response.getLength();
-
-	std::string	msgSend = _response.header + _response.body;
+		try
+		{
+			Response	response( requestParser, _config );
 	
-	ssize_t	bytesSent = send(_fd, msgSend.c_str(), msgSend.length(), 0);
-	//ssize_t	bytesSent = send(_fd, msgSend.c_str(), _request.contentLength, 0);
+			_response.message = response.getResponseMsg();
+			_response.msgLength = response.getMsgLength();
+		}
+		catch( const std::exception& e )
+		{
+			_response.message = "HTTP/1.1 500 Internal Server Error\r\n\r\n";
+			_response.msgLength = _response.message.length();
+			std::cerr << e.what() << '\n';
+		}
+		_response.startSending = true;
+	}
+
+	ssize_t	bytesSent = send(_fd, _response.message.c_str(), _response.msgLength, 0);
 	if ( bytesSent < static_cast<ssize_t>(-1) )
 		return SEND_ERROR;
 
 	_response.sentBytes += bytesSent;
 
-	if ( _response.sentBytes >= _response.contentLength )
+	if ( _response.sentBytes >= _response.msgLength )
 	{
 		_response.pendingSend = false;
 		_clearRequest();
@@ -220,19 +239,3 @@ ResponseStatus	ClientSocket::sendResponse()
 	}
 }
 
-
-/**************************************************************/
-/*                    RESPONSE PARSER                         */
-/**************************************************************/
-
-void	ClientSocket::_saveFile( std::string path, std::string content )
-{
-	std::cout << "Saving file: " << path << std::endl;
-	std::ofstream	ofs(path.c_str());
-
-	if ( !ofs.is_open() )
-		throw std::runtime_error("Error: saveFile() failed");
-
-	ofs << content;
-	ofs.close();
-}

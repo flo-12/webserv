@@ -19,8 +19,6 @@
 #include "Response.hpp"
 #include <ctime>
 
-//# define MAX_REQ_SIZE 8192
-//# define TIMEOUT_RECEIVE 8192
 
 typedef struct s_reqStatus {
 	time_t		startTime;
@@ -32,11 +30,11 @@ typedef struct s_reqStatus {
 
 typedef struct s_resStatus {
 	time_t		startTime;
+	bool		startSending;
 	bool		pendingSend;
-	ssize_t		contentLength;
+	ssize_t		msgLength;
 	ssize_t		sentBytes;
-	std::string	header;
-	std::string	body;
+	std::string	message;
 } t_resStatus;
 
 typedef enum e_ReceiveStatus
@@ -54,19 +52,6 @@ typedef enum e_ResponseStatus
 	SEND_DONE
 } ResponseStatus;
 
-typedef enum e_HttpErrorType
-{
-	NO_ERROR = -1,
-	ERROR_DEFAULT,
-	ERROR_400,
-	ERROR_403,
-	ERROR_404,
-	ERROR_405,
-	ERROR_408,
-	ERROR_500,
-	ERROR_505
-} HttpErrorType;
-
 
 class ClientSocket : public Socket
 {
@@ -80,17 +65,14 @@ class ClientSocket : public Socket
 		void	_clearResponse();
 
 		bool	_requestComplete();
-
-		// Response Parser
-		void	_saveFile( std::string path, std::string content );
 	
 	public:
-		ClientSocket( int serverFd );
+		ClientSocket( int serverFd, ServerConfig config );
 		~ClientSocket();
 
 		// Socket methods
 		void			setupSocket();
-		void			closeConnection( HttpErrorType httpError );
+		void			closeConnection( HttpStatusCode httpStatus );
 		bool			hasTimeout();
 		ReceiveStatus	receiveRequest();
 		ResponseStatus	sendResponse();

@@ -24,6 +24,7 @@
 #include <sstream> // for stringstream
 
 #include "common.hpp"
+#include "ServerConfig.hpp"
 
 //# define MAX_CONNECTIONS 500
 
@@ -43,18 +44,18 @@ typedef enum eSocketType
 
 class Socket
 {
-	//friend class WebServ;
-
 	protected:
 		int				_fd;
 		SocketType		_type;
+		ServerConfig	_config;
 
 	public:
-		Socket( SocketType type );
+		Socket( SocketType type, ServerConfig config );
 		virtual ~Socket();
 
-		int			getFd() const;
-		SocketType	getType() const;
+		int				getFd() const;
+		SocketType		getType() const;
+		ServerConfig	getConfig() const;
 
 		virtual void	setupSocket() = 0;
 

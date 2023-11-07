@@ -5,7 +5,7 @@
 /*                 DEFAULT CON-/DESTRUCTOR                    */
 /**************************************************************/
 
-/*
+/* Response():
 *	Default constructor to set the message status line
 *	to the given http status code.
 */
@@ -27,10 +27,11 @@ Response::Response( HttpStatusCode httpStatus )
 	
 }
 
-/*
-*	1) Check preconditions
-*	2) Check for redirection
-*	3) Check for method and call corresponding handler	
+/* Response():
+*	Constructor to build the response message.
+*		1) Check preconditions
+*		2) Check for redirection
+*		3) Check for method and call corresponding handler	
 */
 Response::Response( RequestParser request, ServerConfig config )
 	: _config(config), _request(request), _msgBodyLength(0), _msgBody("")
@@ -49,11 +50,10 @@ Response::Response( RequestParser request, ServerConfig config )
 		;
 	else if ( _method == GET )
 		_handleGet();
-	else if ( _method == POST )
+	/* else if ( _method == POST )
 		_handlePost();
 	else if ( _method == DELETE )
-		_handleDelete();
-
+		_handleDelete(); */
 }
 
 

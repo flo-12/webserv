@@ -13,7 +13,7 @@ INC			=	-I ./includes/
 # Sources & Objects
 SRC_DIR		= ./srcs/
 SRC_FILES	= main Webserv Socket ClientSocket ServerSocket RequestParser CGIHandler \
-				ConfigParser ServerConfig ServerLocation utils Response
+				ConfigParser ServerConfig ServerLocation Response utils
 #SRC_FILES	+=  ConfigParser ServerConfig ServerLocation utils
 SRCS		= $(addprefix $(SRC_DIR),$(addsuffix .cpp,$(SRC_FILES)))
 

@@ -36,6 +36,7 @@ public:
         std::map<std::string, ServerLocation> vecLB);
     ServerConfig(const ServerConfig &copy);
     ServerConfig& operator=(const ServerConfig &other);
+	ServerConfig(void);
     ~ServerConfig(void);
 
     // Operator Overloading
@@ -51,7 +52,7 @@ private:
     void            _parseServerConfig(std::stringstream &serverBlock);
     unsigned int    _ipStringToInt(const std::string ipAddress);
     
-    ServerConfig(void);
+    
 
     //private data
     std::vector<int>                        _ports;

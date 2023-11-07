@@ -4,11 +4,18 @@
 # include <vector>
 # include <string>
 # include <sstream>
+# include <sys/types.h>
 
 
 /**************************************************************/
 /*                        DEFINES                             */
 /**************************************************************/
+
+// Colors:
+# define RED "\033[0;31m"
+# define GREEN "\033[0;32m"
+# define YELLOW "\033[0;33m"
+# define RESET_PRINT "\033[0m"
 
 // Default server configurations:
 # define DEFAULT_HOST "127.0.0.1"
@@ -25,7 +32,7 @@
 
 // Response:
 # define HTTP_VERSION "HTTP/1.1"
-# define HTTP_STATS_CODE_FILE "/database/http_status_codes.csv"
+# define HTTP_STATS_CODE_FILE "./database/http_status_codes.csv"
 
 
 /**************************************************************/
@@ -74,6 +81,7 @@ typedef enum e_HttpStatusCode
 /**************************************************************/
 
 std::vector<int> 			parseMultiValueInt(std::istringstream& lineStream);
-std::vector<std::string>    parseMultiStringValue(std::istringstream &lineStream);
+std::string					to_string( ssize_t nbr );
+std::string					to_string( HttpStatusCode nbr );
 
 #endif

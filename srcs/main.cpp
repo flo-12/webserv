@@ -53,7 +53,7 @@ int	main( int argc, char **argv )
 	{
 		ConfigParser	config( configFile );
 
-		WebServ webserv( config.getIpPort() );
+		WebServ webserv( config.getIpPort(), config.serverConfigs() );
 		webservPtr = &webserv;
 
 		webserv.serverRun();

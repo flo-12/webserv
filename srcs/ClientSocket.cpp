@@ -199,12 +199,12 @@ ResponseStatus	ClientSocket::sendResponse()
 	if ( !_response.startSending ) {
 		_response.startTime = time(0);
 
-		RequestParser	requestParser( _request );
+		RequestParser	requestParser( _request.buffer, _request.contentLength );
 	
 		try
 		{
 			Response	response( requestParser, _config );
-	
+
 			_response.message = response.getResponseMsg();
 			_response.msgLength = response.getMsgLength();
 		}
@@ -216,6 +216,10 @@ ResponseStatus	ClientSocket::sendResponse()
 		}
 		_response.startSending = true;
 	}
+
+	/* std::cout << "+++++++++++++++++ Response +++++++++++++++++" << std::endl;
+	std::cout << _response.message << std::endl;
+	std::cout << "+++++++++++++++++++++++++++++++++++++++++++" << std::endl; */
 
 	ssize_t	bytesSent = send(_fd, _response.message.c_str(), _response.msgLength, 0);
 	if ( bytesSent < static_cast<ssize_t>(-1) )

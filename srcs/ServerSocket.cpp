@@ -16,8 +16,8 @@
 /*                 DEFAULT CON-/DESTRUCTOR                    */
 /**************************************************************/
 
-ServerSocket::ServerSocket( unsigned int ip, int port )
-	: Socket( SERVER ), _ip(ip), _port(port), _nbrRestarts(0)
+ServerSocket::ServerSocket( unsigned int ip, int port, ServerConfig config )
+	: Socket( SERVER, config ), _ip(ip), _port(port), _nbrRestarts(0)
 {
 	setupSocket();
 

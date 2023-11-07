@@ -13,6 +13,7 @@
 #pragma once
 
 #include "Socket.hpp"
+#include "ServerConfig.hpp"
 
 /* Class ServerSocket:
 *	- inherits from Socket
@@ -31,7 +32,7 @@ class ServerSocket : public Socket
 		void	setupSocket();
 
 	public:
-		ServerSocket( unsigned int ip, int port );
+		ServerSocket( unsigned int ip, int port, ServerConfig config );
 		~ServerSocket();
 
 		void	restartServerSocket();

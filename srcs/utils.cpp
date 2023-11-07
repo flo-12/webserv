@@ -11,3 +11,19 @@ std::vector<int> parseMultiValueInt(std::istringstream& lineStream)
 	    }
 	    return values;
 }
+
+std::string	to_string( ssize_t nbr )
+{
+	std::stringstream ss;
+	ss << nbr;
+
+	return ss.str();
+}
+
+std::string	to_string( HttpStatusCode nbr )
+{
+	std::stringstream ss;
+	ss << nbr;
+
+	return ss.str();
+}

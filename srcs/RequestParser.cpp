@@ -100,10 +100,11 @@ std::string RequestParser::removeCarriageReturn(std::string &str)
 
 void RequestParser::parseRequest(std::string const &buffer)
 {
-    std::cout << "----------Buffer: " << std::endl << buffer << std::endl;
-    //splitBuffer()
-    std::stringstream linestream(buffer);
-    std::string method;
+	//std::cout << "----------Buffer: " << std::endl << buffer << std::endl;
+	//splitBuffer()
+	std::stringstream linestream(buffer);
+	std::string method;
+	std::string lineSkip;		// fbecht changed here
     std::getline(linestream, method, ' ');
     if (method == "GET")
         _method = GET;
@@ -134,7 +135,8 @@ void RequestParser::parseRequest(std::string const &buffer)
         std::getline(sstream, _path, '?');
         std::getline(sstream, _query);
     }
-    std::getline(linestream, _protocol, '\n');
+    std::getline(linestream, _protocol, '\r');
+	std::getline(linestream, lineSkip);		// fbecht changed here
     std::string key;
     std::string value;
     while (linestream)
@@ -149,18 +151,19 @@ void RequestParser::parseRequest(std::string const &buffer)
         if (key.empty() || key[0] == '\r')
             break ;
         //removeCarriageReturn(key);
-        std::getline(linestream, value);
+        std::getline(linestream, value, '\r');
+		std::getline(linestream, lineSkip);		// fbecht changed here
         if (value.empty())
             break ;
         value = value.erase(0, 1);
         _headers[key] = value;
     }
     _host = _headers["Host"];
-    std::cout << "---------------------------------All headers: " << std::endl;
-    std::map<std::string, std::string>::iterator it;
-    it = _headers.begin();
-    for (it = _headers.begin(); it != _headers.end(); ++it)
-        std::cout << it->first << " " << it->second << std::endl;
+    // std::cout << "---------------------------------All headers: " << std::endl;
+    // std::map<std::string, std::string>::iterator it;
+    // it = _headers.begin();
+    // for (it = _headers.begin(); it != _headers.end(); ++it)
+    //     std::cout << "\"" << it->first << "\" " << it->second << std::endl;
 }
 
 void RequestParser::parseHeaders()

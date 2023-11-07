@@ -32,8 +32,10 @@ std::string ServerConfig::getUri(std::string locationKey, std::string requestUri
     if (pathPrefix.empty())
         pathPrefix = _root;
 
-    if (hasFilename == true)
-        fileName = requestUri.substr(locationKey.length() + 1, requestUri.length());
+    if (hasFilename == true) {
+		//fileName = requestUri.substr(locationKey.length() + 1, requestUri.length());
+		fileName = requestUri.substr(locationKey.length(), requestUri.length());	// fbecht changed here
+	}
     else 
     {
         fileName = _serverLocations[locationKey].getIndex();

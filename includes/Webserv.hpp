@@ -61,7 +61,7 @@ class WebServ
 		int		_getFreePollFd();
 		
 	public:
-		WebServ( std::vector<t_ipPort> configInfo );
+		WebServ( std::vector<t_ipPort> configInfo, std::vector<ServerConfig> _serverConfigs );
 		~WebServ();
 		
 		void	serverRun();

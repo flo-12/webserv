@@ -13,6 +13,7 @@
 #include <string>
 #include <cstdio>
 #include <unistd.h>
+#include <cstdlib>
 
 
 typedef struct s_StatusLine
@@ -37,28 +38,26 @@ class Response
 		httpMethod							_method;
 		RequestParser						_request;		
 		ServerConfig						_config;
+		std::string							_httpVersionAllowed;
 
 		t_paths								_paths;
 		std::map<int, std::string>			_httpStatusCodeLookup;
 
 		t_StatusLine						_msgStatusLine;
-		std::map<std::string, std::string>	_msgHeader;
+		std::map<std::string,std::string>	_msgHeader;
 			// Content-Length
 			// Location
 		std::string							_msgBody;
 		ssize_t								_msgBodyLength;
 
-		//HttpStatusCode						_httpStatus;
-		//std::string							_msgStatusLine;
-		//std::string							_msgHeader;
-
 		void	_readHttpStatusCodeDatabase();
+		void	_setPaths( std::string reqUri );
 
 		bool	_checkPreconditions();
 		bool	_checkRedirection();
 
 		void	_handleGet();
-		void	_readFile( std::string path );
+		bool	_readFile( std::string path );
 
 		// Prototyping
 		// void		_buildResponse( std::string path );
@@ -66,8 +65,8 @@ class Response
 		// void		_saveFile( std::string path, std::string content );		
 
 	public:
+		Response( HttpStatusCode httpStatus );
 		Response( RequestParser request, ServerConfig config );
-		Response( std::map<std::string );
 		~Response();
 	
 		// Getters

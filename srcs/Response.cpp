@@ -244,20 +244,6 @@ bool	Response::_readFile( std::string path )
 
 	file.close();
 	return true;
-
-	
-	/* std::string		line;
-	std::string		body;
-	std::ifstream	ifs(path.c_str());
-
-	if ( !ifs.is_open() )
-		return false;
-
-	while ( getline( ifs, line ) )
-		body += line + "\n";
-	ifs.close();
-
-	return body; */
 }
 
 

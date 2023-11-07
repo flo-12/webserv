@@ -2,6 +2,82 @@
 
 /*------------------------------ PUBLIC METHODS -----------------------------*/
 
+/*
+*   Builds the complete (internal) path for serving a file by combining the
+*   requestUri with the information specified in the location. The requestUri
+*   will not contain the part of the locationKey anymore
+*   Scenarios:
+*   1. requestUri specifies a file 
+        => append this file
+*   2. requestUri does not specify a file
+        => use file specfied in "index" of location
+        => if not specified use "index" of general ServerConfig
+*   3. Location specifies a "root"
+        => use path in "root" as prefix to filename/path
+*   4. Location does not specifiy a "root"
+        => use "root" member from ther ServerConfig
+*/
+std::string ServerConfig::getUri(std::string locationKey, std::string requestUri)
+{
+    // do I have to handle the autoindex here as well?
+
+    bool    hasFilename = true;
+    std::string fileName;
+    std::string pathPrefix;
+
+    if (requestUri[requestUri.length() -1 ] == '/')
+        hasFilename = false;
+    
+    pathPrefix = _serverLocations[locationKey].getRoot();
+    if (pathPrefix.empty())
+        pathPrefix = _root;
+
+    if (hasFilename == true)
+        fileName = requestUri.substr(locationKey.length() + 1, requestUri.length());
+    else 
+    {
+        fileName = _serverLocations[locationKey].getIndex();
+        if (fileName.empty())
+            fileName = _index;
+    }
+    return (pathPrefix + "/" + fileName);
+}
+
+/*
+*   Gets the URI path from the HTTP request. Searches through the key values of
+*   all Locations in the ServerConfig.
+*   To do so it first has to extract the requested directory from the URI request.
+*   e.g. /home/test/index.html => /home/test. It will subsequently remove more 
+*   directories if no matches are found. Since the location "/" will always be
+*   provided, this is returned when there are no other matches
+*/
+std::string ServerConfig::getLocationKey(std::string requestUri)
+{
+    // do I have to handle the autoindex here as well?
+
+    int         dir_depth = 0;
+    std::string directory;
+
+    for (size_t i = 0; i < requestUri.length(); i++) {
+        if (requestUri[i] == '/') {
+            dir_depth++;
+        }
+    }
+    directory = requestUri;
+    while (dir_depth > 0)
+    {
+        for (std::map<std::string, ServerLocation>::const_iterator it = _serverLocations.begin(); 
+            it != _serverLocations.end(); ++it)
+        {
+            if (it->first == directory)
+                return (it->first);
+        }
+        directory = requestUri.substr(0, directory.rfind('/'));
+        dir_depth--;
+    }
+    return ("/");
+}
+
 /*----------------------------- PRIVATE METHODS -----------------------------*/
 
 /*
@@ -116,10 +192,70 @@ void    ServerConfig::_parseServerConfig(std::stringstream &serverBlock)
 
 /*--------------------------- GETTERS AND SETTERS ---------------------------*/
 
+std::string ServerConfig::getPort(void) const
+{
+    std::stringstream ss;
+    ss << _ports[0];
+    return (ss.str());
+}
+
+std::vector<int>    ServerConfig::getPorts(void) const
+{
+    return (_ports);
+}
+
+std::string ServerConfig::getHost(void) const
+{
+    return (_host);
+}
+
+std::string ServerConfig::getRoot(void) const
+{
+    return (_root);
+}
+
+std::string ServerConfig::getServerName(void) const
+{
+    return (_serverName);
+}
+
+int ServerConfig::getClientMaxBodySize(void) const
+{
+    return (_clientMaxBodySize);
+}
+
+std::string ServerConfig::getIndex(void) const
+{
+    return (_index);
+}
+
+std::map<int, std::string>  ServerConfig::getErrorPages(void) const
+{
+    return (_errorPage);
+}
+
+std::map<std::string,ServerLocation> ServerConfig::getLocations(void) const
+{
+    return (_serverLocations);
+}
+
+
+unsigned int    ServerConfig::getDecimalIPaddress(void) const
+{
+    return (_decimalIPaddress);
+}
+
 /*------------------- CONSTRUCTOR, ASSIGNEMENT, DESTRUCTOR ------------------*/
 
-ServerConfig::ServerConfig()
+ServerConfig::ServerConfig(void)
 {
+}
+
+
+bool compareKeyLength(const std::pair<std::string, ServerLocation>& a, 
+    const std::pair<std::string, ServerLocation>& b) 
+{
+    return a.first.length() < b.first.length();
 }
 
 /*
@@ -183,16 +319,16 @@ std::ostream& operator<<(std::ostream& os, const ServerConfig& serverConfig)
     
     os << "\033[34m---------- ServerConfig:-----------\033[0m\n";
     os << "Port(s):                 ";
-    for (size_t i = 0; i < serverConfig._ports.size(); ++i) {
-        os << serverConfig._ports[i] << " ";
+    for (size_t i = 0; i < serverConfig.getPorts().size(); ++i) {
+        os << serverConfig.getPorts()[i] << " ";
     }
     os << "\n";
-    os << "Server Name:             " << serverConfig._serverName << "\n";
-    os << "Host:                    " << serverConfig._host << "\n";
-    os << "IP (int):                " << serverConfig._decimalIPaddress << "\n";
-    os << "Root:                    " << serverConfig._root << "\n";
-    os << "Client Max Body Size:    " << serverConfig._clientMaxBodySize << "\n";
-    os << "Index:                   " << serverConfig._index << "\n";
+    os << "Server Name:             " << serverConfig.getServerName() << "\n";
+    os << "Host:                    " << serverConfig.getHost() << "\n";
+    os << "IP (int):                " << serverConfig.getDecimalIPaddress() << "\n";
+    os << "Root:                    " << serverConfig.getRoot() << "\n";
+    os << "Client Max Body Size:    " << serverConfig.getClientMaxBodySize() << "\n";
+    os << "Index:                   " << serverConfig.getIndex() << "\n";
     os << "Error Pages:\n";
     for (std::map<int, std::string>::const_iterator it = serverConfig._errorPage.begin();
             it != serverConfig._errorPage.end(); ++it) 
@@ -203,8 +339,8 @@ std::ostream& operator<<(std::ostream& os, const ServerConfig& serverConfig)
     for (std::map<std::string, ServerLocation>::const_iterator it = serverConfig._serverLocations.begin(); 
             it != serverConfig._serverLocations.end(); ++it) {
         os << "\033[92m---------- Location: " << it->first << " -----------\033[0m\n";
-        std::cout << it->second;
-        std::cout << std::endl;
+        os << it->second;
+        os << std::endl;
     }
     os << "\n";
     return os;

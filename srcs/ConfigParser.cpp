@@ -120,10 +120,32 @@ void    ConfigParser::_parseConfigFile(std::ifstream &configFile)
 
 /*--------------------------- GETTERS AND SETTERS ---------------------------*/
 
-
+/*
+*   This function takes the vector of server configuration files and makes it
+*   so that each Server Configuration will only create a single IP, port pair.
+*   this way, when there are multiple ports on an IP, all the members of
+*   the ServerConfig will get duplicated into a new instance
+*/
 std::vector<ServerConfig> ConfigParser::serverConfigs(void) const
 {
-    return (_serverConfigs);
+    std::vector<ServerConfig>   extendedServerConfigs;
+
+    for (size_t i = 0; i < _serverConfigs.size(); i++)
+    {
+        for (size_t j = 0; j < _serverConfigs[i]._ports.size(); j++)
+        {
+            ServerConfig    tmp(_serverConfigs[i]);
+
+            (tmp._ports).clear();
+            (tmp._ports).push_back(_serverConfigs[i]._ports[j]);
+            extendedServerConfigs.push_back(tmp);
+        }
+    }
+    // for (size_t i = 0; i < extendedServerConfigs.size(); i++)
+    // {
+    //     std::cout << extendedServerConfigs[i] << std::endl;
+    // }
+    return (extendedServerConfigs);
 }
 
 /*------------------- CONSTRUCTOR, ASSIGNEMENT, DESTRUCTOR ------------------*/

@@ -69,8 +69,8 @@ typedef enum e_HttpStatusCode
 	STATUS_403 = 403,
 	STATUS_404 = 404,
 	STATUS_405 = 405,
-	STATUS_413 = 413,
 	STATUS_408 = 408,
+	STATUS_413 = 413,
 	STATUS_500 = 500,
 	STATUS_505 = 505
 } HttpStatusCode;

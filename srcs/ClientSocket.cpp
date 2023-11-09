@@ -196,6 +196,10 @@ ReceiveStatus	ClientSocket::receiveRequest()
 */
 ResponseStatus	ClientSocket::sendResponse()
 {
+	std::cout << " +++++++++++++++++++ INITIAL POST +++++++++++++++++++" << std::endl;
+	std::cout << _request.buffer << std::endl;
+	std::cout << " +++++++++++++++++++++++++++++++++++++++++++++++++++" << std::endl;
+
 	if ( !_response.startSending ) {
 		_response.startTime = time(0);
 
@@ -218,7 +222,7 @@ ResponseStatus	ClientSocket::sendResponse()
 	}
 
 	/* std::cout << "+++++++++++++++++ Response +++++++++++++++++" << std::endl;
-	std::cout << _response.message << std::endl;
+	std::cout << GREEN << _response.message << RESET_PRINT << std::endl;
 	std::cout << "+++++++++++++++++++++++++++++++++++++++++++" << std::endl; */
 
 	ssize_t	bytesSent = send(_fd, _response.message.c_str(), _response.msgLength, 0);

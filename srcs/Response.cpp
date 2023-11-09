@@ -37,23 +37,17 @@ Response::Response( RequestParser request, ServerConfig config )
 	_method = request.getMethod();
 	_setPaths( request.getPath() );
 
-	if ( !_checkPreconditions( ) )	// path dependent on configFile!!!
-		;
+	if ( _method != POST && !_checkPreconditions( ) )
+		_readErrorPage( _msgStatusLine.statusCode );
 	else if ( _checkRedirection( ) )
 		;
 	else if ( _method == GET )
 		_handleGet();
-	/* else if ( _method == POST )
+	else if ( _method == POST )
 		_handlePost();
-	else if ( _method == DELETE )
+	/* else if ( _method == DELETE )
 		_handleDelete(); */
 }
-
-/* Response::Response( std::map<std::string, std::string> )
-	: 
-{
-	_buildResponse( _paths );
-} */
 
 Response::~Response()
 {
@@ -108,6 +102,7 @@ bool	Response::_checkPreconditions()
 	if ( access(_paths.responseUri.c_str(), F_OK) != 0 ) {
 		std::cerr << YELLOW << "File not found: " << _paths.responseUri << RESET_PRINT << std::endl;
 		_setMsgStatusLine( STATUS_404 );
+		std::cerr << RED << "Error: " << _msgStatusLine.statusCode << " " << _msgStatusLine.reasonPhrase << RESET_PRINT << std::endl;	// to be removed
 		return false;
 	}
 
@@ -133,7 +128,7 @@ bool	Response::_checkPreconditions()
 
 	// check if HTTP version is supported
 	if ( _request.getProtocol() != _httpVersionAllowed ) {
-		std::cout << YELLOW << "HTTP version not supported: \"" << _request.getProtocol() << "\"" << RESET_PRINT << std::endl;
+		std::cerr << YELLOW << "HTTP version not supported: \"" << _request.getProtocol() << "\"" << RESET_PRINT << std::endl;
 		_setMsgStatusLine( STATUS_405 );
 		return false;
 	}
@@ -204,12 +199,40 @@ void	Response::_handleGet()
 		_msgHeader["Content-Length"] = to_string(_msgBodyLength);
 }
 
+/* _handlePost:
+*	Handles a POST request.
+*		- if CGI is needed ⇒ call CGI
+*		- else: Creates POST response for
+*			- upload file (create file)
+*			- submit form without file
+*/
+void	Response::_handlePost()
+{
+	/* if ( cgiNeede() )
+		// call CGI */
+	
+	// Prototype for file upload
+	std::cout << " ++++++++++++++++++++++ POST request ++++++++++++++++++++++" << std::endl;
+	std::cout << _request.getBody() << std::endl;
+	std::cout << " +++++++++++++++++++++++++++++++++++++++++++++++++++++++++" << std::endl;
+
+
+	_setMsgStatusLine( STATUS_201 );
+	_msgBodyLength = 19;
+	_msgHeader["Content-Length"] = to_string(_msgBodyLength);
+	_msgHeader["Content-Type"] = "text/html";
+	_msgBody = "<!DOCTYPE html><html></html>";
+}
+
+
 /* _readErrorPage:
 *	Reads the error page corresponding to the given http status code
 *	and stores it in _msgBody (if existent and read-rights).
 */
 void	Response::_readErrorPage( HttpStatusCode httpStatus )
 {
+	std::cout << RED << "_readErrorPage()" << RESET_PRINT << std::endl;
+
 	_setMsgStatusLine( httpStatus );
 
 	// Get path to error page
@@ -224,21 +247,26 @@ void	Response::_readErrorPage( HttpStatusCode httpStatus )
 
 	// Read error page
 	if ( !_readFile( _paths.responseUri ) ) {
-		_msgStatusLine.statusCode = STATUS_500;
-		_readErrorPage( _msgStatusLine.statusCode );
+		if ( httpStatus != STATUS_500 ) {
+			_msgStatusLine.statusCode = STATUS_500;
+			_readErrorPage( _msgStatusLine.statusCode );
+		}
+		else {
+			_msgBody = "";
+			_msgBodyLength = 0;
+		}
 	}
 	_msgHeader["Content-Length"] = to_string(_msgBodyLength);
 }
 
 /* _readFile:
-*	Reads the file from the given path and returns it as a std::string.
+*	Reads the file from the given path and stores the content in _msgBody.
 *	Also stores the number of bytes read in _msgBodyLength.
 *	Returns false if the file could not be opened or if the file could 
 *		not be read. Otherwise true.
 */
 bool	Response::_readFile( std::string path )
 {
-	//std::cout << "Reading file: " << path << std::endl;
 	std::ifstream	file(path.c_str(), std::ios::in | std::ios::binary);
 
 	if ( !file.is_open() )
@@ -268,6 +296,30 @@ bool	Response::_readFile( std::string path )
 	file.close();
 	return true;
 }
+
+/* _saveFile:
+*	Saves the given content in the file at the given path (in binary).
+*	Returns false if the file could not be opened or if the file could
+*		not be written. Otherwise true.
+*/
+bool	Response::_saveFile( std::string path, std::string content, ssize_t contentLength )
+{
+	std::cout << "Saving file: " << path << std::endl;
+	std::ofstream	file(path.c_str(), std::ios::out | std::ios::trunc | std::ios::binary);
+
+	if ( !file.is_open() )
+		return false;
+
+	// Write content to file
+	if (!file.write( content.c_str(), contentLength )) {
+		file.close();
+		return false;
+	}
+
+	file.close();
+	return true;
+}
+
 
 
 /* _readHttpStatusCodeDatabase:
@@ -343,8 +395,6 @@ ssize_t		Response::getMsgLength() const
 {
 	return getMsgHeader().length() + _msgBodyLength;
 }
-
-
 
 
 
@@ -425,19 +475,6 @@ ssize_t		Response::getMsgLength() const
 // 	_msgHeader += "Content-Length: " + strStream.str() + "\r\n";
 // 	_msgHeader += "\r\n";
 // 	_msgLength = _msgStatusLine.length() + _msgHeader.length() + _msgBody.length();
-// }
-
-
-// void	ClientSocket::_saveFile( std::string path, std::string content )
-// {
-// 	std::cout << "Saving file: " << path << std::endl;
-// 	std::ofstream	ofs(path.c_str());
-
-// 	if ( !ofs.is_open() )
-// 		throw std::runtime_error("Error: saveFile() failed");
-
-// 	ofs << content;
-// 	ofs.close();
 // }
 
 

@@ -58,13 +58,14 @@ class Response
 		bool	_checkRedirection();
 
 		void	_handleGet();
+		void	_handlePost();
 		void	_readErrorPage( HttpStatusCode httpStatus );
 		bool	_readFile( std::string path );
+		bool	_saveFile( std::string path, std::string content, ssize_t contentLength );
 
 		// Prototyping
 		// void		_buildResponse( std::string path );
 		// void		_buildResponseCGI( std::string path );
-		// void		_saveFile( std::string path, std::string content );		
 
 	public:
 		Response( HttpStatusCode httpStatus, ServerConfig config );

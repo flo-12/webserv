@@ -83,5 +83,6 @@ typedef enum e_HttpStatusCode
 std::vector<int> 			parseMultiValueInt(std::istringstream& lineStream);
 std::string					to_string( ssize_t nbr );
 std::string					to_string( HttpStatusCode nbr );
+std::string					parseSingleValueString(std::istringstream &lineStream, const std::string &whichLine);
 
 #endif

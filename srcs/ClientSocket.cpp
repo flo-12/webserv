@@ -110,8 +110,8 @@ void	ClientSocket::closeConnection( HttpStatusCode httpStatus )
 	{
 		try
 		{
-			Response	response( httpStatus );	// to be implemented
-	
+			Response	response( httpStatus, _config );	// to be implemented
+
 			_response.message = response.getResponseMsg();
 			_response.msgLength = response.getMsgLength();
 		}
@@ -200,7 +200,7 @@ ResponseStatus	ClientSocket::sendResponse()
 		_response.startTime = time(0);
 
 		RequestParser	requestParser( _request.buffer, _request.contentLength );
-	
+
 		try
 		{
 			Response	response( requestParser, _config );

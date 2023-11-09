@@ -9,22 +9,16 @@
 *	Default constructor to set the message status line
 *	to the given http status code.
 */
-Response::Response( HttpStatusCode httpStatus )
-	: _httpVersionAllowed(HTTP_VERSION), _msgBody(""), _msgBodyLength(0)
+Response::Response( HttpStatusCode httpStatus, ServerConfig config )
+	: _config(config), _httpVersionAllowed(HTTP_VERSION), _msgBody(""), _msgBodyLength(0)
 {
 	_readHttpStatusCodeDatabase();
 	if ( _httpStatusCodeLookup.empty() )
 		throw std::runtime_error("Error: http status code database empty");
 	
-	_msgStatusLine.protocolVersion = HTTP_VERSION;
-
-	_msgStatusLine.statusCode = httpStatus;
-	std::map<int, std::string>::iterator it = _httpStatusCodeLookup.find(_msgStatusLine.statusCode);
-	if ( it != _httpStatusCodeLookup.end() )
-		_msgStatusLine.reasonPhrase = it->second;
-	else
-		_msgStatusLine.reasonPhrase = "";
+	_setMsgStatusLine( httpStatus );
 	
+	_readErrorPage( httpStatus );
 }
 
 /* Response():
@@ -40,7 +34,6 @@ Response::Response( RequestParser request, ServerConfig config )
 	if ( _httpStatusCodeLookup.empty() )
 		throw std::runtime_error("Error: http status code database empty");
 
-	_msgStatusLine.protocolVersion = HTTP_VERSION;
 	_method = request.getMethod();
 	_setPaths( request.getPath() );
 
@@ -55,7 +48,6 @@ Response::Response( RequestParser request, ServerConfig config )
 	else if ( _method == DELETE )
 		_handleDelete(); */
 }
-
 
 /* Response::Response( std::map<std::string, std::string> )
 	: 
@@ -83,6 +75,22 @@ void	Response::_setPaths( std::string reqUri )
 	_paths.responseUri = _config.getUri( _paths.confLocKey, reqUri );
 }
 
+/* _setMsgStatusLine:
+*	Sets the message status line to the http-version and the given http 
+*	status code (code + phrase).
+*/
+void	Response::_setMsgStatusLine( HttpStatusCode httpStatus )
+{
+	_msgStatusLine.protocolVersion = HTTP_VERSION;
+
+	_msgStatusLine.statusCode = httpStatus;
+	std::map<int, std::string>::iterator it = _httpStatusCodeLookup.find(_msgStatusLine.statusCode);
+	if ( it != _httpStatusCodeLookup.end() )
+		_msgStatusLine.reasonPhrase = it->second;
+	else
+		_msgStatusLine.reasonPhrase = "";
+}
+
 /* _checkPreconditions:
 *	Checks if the request meets all preconditions:
 *		- path/file exists ⇒ 404 Not Found
@@ -99,7 +107,7 @@ bool	Response::_checkPreconditions()
 	// check if path/file exists
 	if ( access(_paths.responseUri.c_str(), F_OK) != 0 ) {
 		std::cerr << YELLOW << "File not found: " << _paths.responseUri << RESET_PRINT << std::endl;
-		_msgStatusLine.statusCode = STATUS_404;
+		_setMsgStatusLine( STATUS_404 );
 		return false;
 	}
 
@@ -107,7 +115,7 @@ bool	Response::_checkPreconditions()
 	if ( (_method == GET && access(_paths.responseUri.c_str(), R_OK) != 0 ) 
 		|| (_method == DELETE && access(_paths.responseUri.c_str(), X_OK) != 0 ) ) {
 			std::cerr << YELLOW << "No access to file: " << _paths.responseUri << RESET_PRINT << std::endl;
-		_msgStatusLine.statusCode = STATUS_403;
+		_setMsgStatusLine( STATUS_403 );
 		return false;
 	}
 
@@ -118,42 +126,36 @@ bool	Response::_checkPreconditions()
 			break ;
 		else if ( it == methods.end() ) {
 			std::cerr << YELLOW << "Method not allowed: " << _method << RESET_PRINT << std::endl;
-			_msgStatusLine.statusCode = STATUS_405;
+			_setMsgStatusLine( STATUS_405 );
 			return false;
 		}
 	}
 
 	// check if HTTP version is supported
-	fflush(stdout);
-	std::string		httpVersion = _request.getProtocol();
-	if ( httpVersion != _httpVersionAllowed ) {
-		//std::cout << YELLOW << "HTTP version not supported: \"" << httpVersion << "\"" << RESET_PRINT << std::endl;
-		std::cout << YELLOW << "HTTP version not supported: \"" << _httpVersionAllowed << "\"" << RESET_PRINT << std::endl;
-		std::cout << "Allowed version: \"" << _httpVersionAllowed << "\"" << std::endl;	// "HTTP/1.1
-		for (size_t i = 0; i < httpVersion.length(); i++)
-			std::cout << "req: " << (int)httpVersion[i] << " | head: " << (int)_httpVersionAllowed[i] << std::endl;
-		_msgStatusLine.statusCode = STATUS_505;
+	if ( _request.getProtocol() != _httpVersionAllowed ) {
+		std::cout << YELLOW << "HTTP version not supported: \"" << _request.getProtocol() << "\"" << RESET_PRINT << std::endl;
+		_setMsgStatusLine( STATUS_405 );
 		return false;
 	}
 
 	// check if request body size is valid
 	if ( _request.getContentLength() > _config.getClientMaxBodySize() ) {	// ask Linus to return ssize_t!!
 		std::cerr << YELLOW << "Request body too large: " << _request.getContentLength() << RESET_PRINT << std::endl;
-		_msgStatusLine.statusCode = STATUS_413;
+		_setMsgStatusLine( STATUS_413 );
 		return false;
 	}
 
 	// check if Host field is present
 	if ( _request.getHost() != _config.getHost() + ":" + _config.getPort() ) {
 		std::cerr << YELLOW << "Host field not present or wrong: " << _request.getHost() << RESET_PRINT << std::endl;
-		_msgStatusLine.statusCode = STATUS_400;
+		_setMsgStatusLine( STATUS_400 );
 		return false;
 	}
 
 	// check if content length is smaller 0
 	if ( _request.getContentLength() < static_cast<ssize_t>(0) ) {
 		std::cerr << YELLOW << "Content length smaller 0: " << _request.getContentLength() << RESET_PRINT << std::endl;
-		_msgStatusLine.statusCode = STATUS_400;
+		_setMsgStatusLine( STATUS_400 );
 		return false;
 	}
 
@@ -194,17 +196,38 @@ void	Response::_handleGet()
 	else { */
 		// create GET response
 		if ( !_readFile( _paths.responseUri ) )
-			_msgStatusLine.statusCode = STATUS_500;
+			_readErrorPage( STATUS_500 );
 		else
-			_msgStatusLine.statusCode = STATUS_200;
-		std::map<int, std::string>::iterator it = _httpStatusCodeLookup.find(_msgStatusLine.statusCode);
-		if ( it != _httpStatusCodeLookup.end() )
-			_msgStatusLine.reasonPhrase = it->second;
-		else
-			_msgStatusLine.reasonPhrase = "";
+			_setMsgStatusLine( STATUS_200 );
 		
 		//_msgHeader["Content-Type"] = ;
 		_msgHeader["Content-Length"] = to_string(_msgBodyLength);
+}
+
+/* _readErrorPage:
+*	Reads the error page corresponding to the given http status code
+*	and stores it in _msgBody (if existent and read-rights).
+*/
+void	Response::_readErrorPage( HttpStatusCode httpStatus )
+{
+	_setMsgStatusLine( httpStatus );
+
+	// Get path to error page
+	std::map<HttpStatusCode, std::string>			errorPages = _config.getErrorPages();
+	std::map<HttpStatusCode, std::string>::iterator	itErrorPages = errorPages.find(httpStatus);
+	if ( itErrorPages == errorPages.end() ) {
+		_setMsgStatusLine( STATUS_500 );
+		return ;
+	}
+	else
+		_paths.responseUri = itErrorPages->second;
+
+	// Read error page
+	if ( !_readFile( _paths.responseUri ) ) {
+		_msgStatusLine.statusCode = STATUS_500;
+		_readErrorPage( _msgStatusLine.statusCode );
+	}
+	_msgHeader["Content-Length"] = to_string(_msgBodyLength);
 }
 
 /* _readFile:

@@ -3,6 +3,24 @@
 /*------------------------------ PUBLIC METHODS -----------------------------*/
 
 /*
+*   Given the HTTP status code, connects the root directory of the server with
+*   the directory of the error page. If no error page is found, an empty string
+*   is returned
+*/
+std::string ServerConfig::retrievePathErrorPage(const HttpStatusCode errorStatus) 
+{
+    std::string errorDir;
+
+    errorDir = _errorPage[errorStatus];
+    if (errorDir.empty())
+        return ("");
+    else
+    {
+        return (_root + "/" + errorDir);
+    }
+}
+
+/*
 *   Builds the complete (internal) path for serving a file by combining the
 *   requestUri with the information specified in the location. The requestUri
 *   will not contain the part of the locationKey anymore
@@ -87,27 +105,60 @@ Takes an IP address as a string in format "127.0.0.1" and translates the four
 octets into their integer representation.
 */
 unsigned int ServerConfig::_ipStringToInt(const std::string ipAddress) {
-    std::vector<unsigned int> parts;
-    std::istringstream ipStream(ipAddress);
-    std::string part;
+    std::vector<unsigned int>   parts;
+    std::istringstream          ipStream(ipAddress);
+    std::string                 part;
+    unsigned int                ip;
+    int                         count = 0;
 
     // this is terrible !!!
     if (ipAddress.empty())
         return(0);
-    
     while (std::getline(ipStream, part, '.')) 
     {
+        count++;
         unsigned int num = static_cast<unsigned int>(atoi(part.c_str()));
         parts.push_back(num);
     }
-    unsigned int ip = (parts[0] << 24) | (parts[1] << 16) | (parts[2] << 8) | parts[3];
-    (void)ipAddress;
+    if (count != 4)
+        throw(std::runtime_error("Error, IP address has invalid format"));
+    ip = (parts[0] << 24) | (parts[1] << 16) | (parts[2] << 8) | parts[3];
     return (ip);
 }
 
 void    ServerConfig::_setDefaultErrorPages(void)
 {
-    // _errorPage.insert(std::make_pair(404, "error_pages/404.html"));
+    int numDefaultErrorLocations = 7;
+
+    HttpStatusCode arrErrorCodes[] = {
+        static_cast<HttpStatusCode>(400),
+        static_cast<HttpStatusCode>(403),
+        static_cast<HttpStatusCode>(404),
+        static_cast<HttpStatusCode>(405),
+        static_cast<HttpStatusCode>(408),
+        static_cast<HttpStatusCode>(500),
+        static_cast<HttpStatusCode>(504)
+    };
+    std::string arrErrorDefaultLocations[] = {
+        "error_pages/400.html",
+        "error_pages/403.html",
+        "error_pages/404.html",
+        "error_pages/405.html",
+        "error_pages/408.html",
+        "error_pages/500.html",
+        "error_pages/504.html",
+    };
+
+    for (int i = 0; i < numDefaultErrorLocations; i ++)
+    {
+        if (_errorPage.find(arrErrorCodes[i]) == _errorPage.end())
+        {
+            std::cout   << "\033[33m WARNING:\033[0m " << "no error page " << arrErrorCodes[i] <<
+                     " provided, default set to " << arrErrorDefaultLocations[i] << std::endl;
+            _errorPage.insert(std::make_pair(arrErrorCodes[i], 
+                                                arrErrorDefaultLocations[i]));
+        }
+    }
 }
 
 void    ServerConfig::_setDefaultLocations(void)
@@ -141,14 +192,16 @@ receives a lineStream object with one or multiple key value pairs for the error
 pages. Stores them in the std::map<int, std::string> errorPage of ServerConfig
 */
 
-void ServerConfig::_parseErrorPage(std::istringstream &lineStream) {
+void ServerConfig::_parseErrorPages(std::istringstream &lineStream) {
     int errorCode;
     std::string errorPage;
 
     while (lineStream)
     {
-        if (lineStream >> errorCode >> errorPage) 
-            _errorPage[errorCode] = errorPage;
+        if (lineStream >> errorCode >> errorPage)
+        {
+            _errorPage[ static_cast<HttpStatusCode>(errorCode)] = errorPage;
+        }
         else
         {
             // handle errors like an incomplete key value pair
@@ -159,7 +212,7 @@ void ServerConfig::_parseErrorPage(std::istringstream &lineStream) {
 /*
 Receives a stringstream object from the parseConfigFile which contains the 
 contents of one server block (server{...}). Proceeds to parse each line. 
-Empty lines and lines startung with a "#"" will be skipped. 
+Empty lines and lines startung with a "#"" will be skipped.
 */
 void    ServerConfig::_parseServerConfig(std::stringstream &serverBlock)
 {
@@ -176,15 +229,15 @@ void    ServerConfig::_parseServerConfig(std::stringstream &serverBlock)
         if (key == "listen")
             _ports = parseMultiValueInt(lineStream);
         else if (key == "server_name")
-            lineStream >> _serverName;
+            _serverName = parseSingleValueString(lineStream, key);
         else if (key == "host")
-            lineStream >> _host;
+            _host = parseSingleValueString(lineStream, key);
         else if (key == "root")
-            lineStream >> _root;
+            _root = parseSingleValueString(lineStream, key);
         else if (key == "index")
-            lineStream >> _index;
+            _index = parseSingleValueString(lineStream, key)    ;
         else if (key == "error_page")
-            _parseErrorPage(lineStream);
+            _parseErrorPages(lineStream);
         else
             throw (std::runtime_error("Error, unknown keyword: " + key));
     }
@@ -231,7 +284,7 @@ std::string ServerConfig::getIndex(void) const
     return (_index);
 }
 
-std::map<int, std::string>  ServerConfig::getErrorPages(void) const
+std::map<HttpStatusCode, std::string>  ServerConfig::getErrorPages(void) const
 {
     return (_errorPage);
 }
@@ -274,6 +327,7 @@ ServerConfig::ServerConfig(std::stringstream &serverBlock, int index,
     _parseServerConfig(serverBlock);
     _decimalIPaddress = _ipStringToInt(_host);
     _serverLocations = vecLB;
+    _setDefaultErrorPages();
     (void)index;
 
     // if not all arguments are provided set default things ???
@@ -332,7 +386,7 @@ std::ostream& operator<<(std::ostream& os, const ServerConfig& serverConfig)
     os << "Client Max Body Size:    " << serverConfig.getClientMaxBodySize() << "\n";
     os << "Index:                   " << serverConfig.getIndex() << "\n";
     os << "Error Pages:\n";
-    for (std::map<int, std::string>::const_iterator it = serverConfig._errorPage.begin();
+    for (std::map<HttpStatusCode, std::string>::const_iterator it = serverConfig._errorPage.begin();
             it != serverConfig._errorPage.end(); ++it) 
     {
         os << " " << it->first << ": " << it->second << "\n";

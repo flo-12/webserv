@@ -27,3 +27,16 @@ std::string	to_string( HttpStatusCode nbr )
 
 	return ss.str();
 }
+
+std::string	parseSingleValueString(std::istringstream &lineStream, const std::string &whichLine)
+{
+    std::string value;
+    std::string empty;
+
+    lineStream >> value;
+    lineStream >> empty;
+    if (!empty.empty())
+        throw(std::runtime_error("Error when parsing line '" + whichLine + 
+                "' too many values"));
+    return (value);
+}

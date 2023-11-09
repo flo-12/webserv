@@ -52,11 +52,13 @@ class Response
 
 		void	_readHttpStatusCodeDatabase();
 		void	_setPaths( std::string reqUri );
+		void	_setMsgStatusLine( HttpStatusCode httpStatus );
 
 		bool	_checkPreconditions();
 		bool	_checkRedirection();
 
 		void	_handleGet();
+		void	_readErrorPage( HttpStatusCode httpStatus );
 		bool	_readFile( std::string path );
 
 		// Prototyping
@@ -65,7 +67,7 @@ class Response
 		// void		_saveFile( std::string path, std::string content );		
 
 	public:
-		Response( HttpStatusCode httpStatus );
+		Response( HttpStatusCode httpStatus, ServerConfig config );
 		Response( RequestParser request, ServerConfig config );
 		~Response();
 	

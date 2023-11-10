@@ -3,6 +3,7 @@
 
 # include <string>
 # include <vector>
+# include <utility>
 # include <iostream>
 # include <sstream> //std::stringstream
 # include "common.hpp"
@@ -10,16 +11,17 @@
 class ServerLocation
 {
 public:
-    // public methods
+    // validation
+    std::string validate(void) const;
 
     // Getters
-    std::string             getIndex(void) const;
-    std::vector<httpMethod> getMethods(void) const;
-    bool                    getAutoindex(void) const;
-    std::string             getReturn(void) const;
-    std::string             getRoot(void) const;
-    std::string             getCgiPath(void) const;
-    std::string             getCgiExtension(void) const;
+    std::string                             getIndex(void) const;
+    std::vector<httpMethod>                 getMethods(void) const;
+    bool                                    getAutoindex(void) const;
+    std::pair<HttpStatusCode, std::string>  getReturn(void) const;
+    std::string                             getRoot(void) const;
+    std::string                             getCgiPath(void) const;
+    bool                                    getIsCgi(void) const;
 
     // Constructors, Assignment, Destructors
     ServerLocation(void);
@@ -29,18 +31,16 @@ public:
     ~ServerLocation(void);
 
 private:
+    std::string                             _index;
+    std::vector<httpMethod>                 _methods;
+    bool                                    _autoindex;
+    std::pair<HttpStatusCode, std::string>  _return;
+    std::string                             _root;
+    std::string                             _cgiPath;
+    bool                                    _isCgi;
 
     // parsing
     void    _parseMethods(std::istringstream &lineStream);
-    
-    // private data
-    std::string                 _index;
-    std::vector<httpMethod>     _methods;
-    bool                        _autoindex;
-    std::string                 _return;
-    std::string                 _root;
-    std::string                 _cgiPath;
-    std::string                 _cgiExtension;
 };
 
 std::ostream& operator<<(std::ostream& os, const ServerLocation& serverGeneral);

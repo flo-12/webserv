@@ -37,7 +37,7 @@ Response::Response( RequestParser request, ServerConfig config )
 	_method = request.getMethod();
 	_setPaths( request.getPath() );
 
-	if ( _method != POST && !_checkPreconditions( ) )
+	if ( _method != POST && !_checkPreconditions( ) )	// check again the _method!=POST
 		_readErrorPage( _msgStatusLine.statusCode );
 	else if ( _checkRedirection( ) )
 		;
@@ -45,8 +45,8 @@ Response::Response( RequestParser request, ServerConfig config )
 		_handleGet();
 	else if ( _method == POST )
 		_handlePost();
-	/* else if ( _method == DELETE )
-		_handleDelete(); */
+	else if ( _method == DELETE )
+		_handleDelete();
 }
 
 Response::~Response()
@@ -67,6 +67,7 @@ void	Response::_setPaths( std::string reqUri )
 	_paths.requestUri = reqUri;
 	_paths.confLocKey = _config.getLocationKey( reqUri );
 	_paths.responseUri = _config.getUri( _paths.confLocKey, reqUri );
+	std::cout << "Response path: \"" << _paths.responseUri << "\"" << std::endl;
 }
 
 /* _setMsgStatusLine:
@@ -99,10 +100,10 @@ void	Response::_setMsgStatusLine( HttpStatusCode httpStatus )
 bool	Response::_checkPreconditions()
 {
 	// check if path/file exists
+	// differentiate for DELETE and GET <--- TODO
 	if ( access(_paths.responseUri.c_str(), F_OK) != 0 ) {
 		std::cerr << YELLOW << "File not found: " << _paths.responseUri << RESET_PRINT << std::endl;
-		_setMsgStatusLine( STATUS_404 );
-		std::cerr << RED << "Error: " << _msgStatusLine.statusCode << " " << _msgStatusLine.reasonPhrase << RESET_PRINT << std::endl;	// to be removed
+		_readErrorPage( STATUS_404 );
 		return false;
 	}
 
@@ -110,18 +111,19 @@ bool	Response::_checkPreconditions()
 	if ( (_method == GET && access(_paths.responseUri.c_str(), R_OK) != 0 ) 
 		|| (_method == DELETE && access(_paths.responseUri.c_str(), X_OK) != 0 ) ) {
 			std::cerr << YELLOW << "No access to file: " << _paths.responseUri << RESET_PRINT << std::endl;
-		_setMsgStatusLine( STATUS_403 );
+		_readErrorPage( STATUS_403 );
 		return false;
 	}
 
 	// check if method is allowed
 	std::vector<httpMethod> methods = _config.getLocations()[_paths.confLocKey].getMethods();
+
 	for ( std::vector<httpMethod>::iterator it = methods.begin(); it != methods.end(); it++ ) {
 		if ( *it == _method )
 			break ;
-		else if ( it == methods.end() ) {
+		else if ( it + 1 == methods.end() ) {
 			std::cerr << YELLOW << "Method not allowed: " << _method << RESET_PRINT << std::endl;
-			_setMsgStatusLine( STATUS_405 );
+			_readErrorPage( STATUS_405 );
 			return false;
 		}
 	}
@@ -129,28 +131,28 @@ bool	Response::_checkPreconditions()
 	// check if HTTP version is supported
 	if ( _request.getProtocol() != _httpVersionAllowed ) {
 		std::cerr << YELLOW << "HTTP version not supported: \"" << _request.getProtocol() << "\"" << RESET_PRINT << std::endl;
-		_setMsgStatusLine( STATUS_405 );
+		_readErrorPage( STATUS_405 );
 		return false;
 	}
 
 	// check if request body size is valid
 	if ( _request.getContentLength() > _config.getClientMaxBodySize() ) {	// ask Linus to return ssize_t!!
 		std::cerr << YELLOW << "Request body too large: " << _request.getContentLength() << RESET_PRINT << std::endl;
-		_setMsgStatusLine( STATUS_413 );
+		_readErrorPage( STATUS_413 );
 		return false;
 	}
 
 	// check if Host field is present
 	if ( _request.getHost() != _config.getHost() + ":" + _config.getPort() ) {
 		std::cerr << YELLOW << "Host field not present or wrong: " << _request.getHost() << RESET_PRINT << std::endl;
-		_setMsgStatusLine( STATUS_400 );
+		_readErrorPage( STATUS_400 );
 		return false;
 	}
 
 	// check if content length is smaller 0
 	if ( _request.getContentLength() < static_cast<ssize_t>(0) ) {
 		std::cerr << YELLOW << "Content length smaller 0: " << _request.getContentLength() << RESET_PRINT << std::endl;
-		_setMsgStatusLine( STATUS_400 );
+		_readErrorPage( STATUS_400 );
 		return false;
 	}
 
@@ -164,13 +166,13 @@ bool	Response::_checkPreconditions()
 */
 bool	Response::_checkRedirection()
 {
-	/* std::string	redirection = _config.getRedirection( _paths.confLocKey );
+	std::pair<HttpStatusCode, std::string>	redirection = _config.getRedirection( _paths.confLocKey );
 
-	if ( redirection != "" ) {
-		_msgStatusLine.statusCode = STATUS_301;
-		_msgHeader["Location"] = redirection;
+	if ( redirection.first >= STATUS_300 && redirection.first <= STATUS_308) {
+		_setMsgStatusLine( redirection.first );
+		_msgHeader["Location"] = redirection.second;
 		return true;
-	} */
+	}
 	return false;
 }
 
@@ -189,14 +191,27 @@ void	Response::_handleGet()
 		// call CGI
 	}
 	else { */
+	
+	// Check autoindex
+	if (_paths.responseUri[_paths.responseUri.length() - 1] == '/')
+	{
+		_readDir( _paths.responseUri );
+		if ( !_readDir( _paths.responseUri ) )
+			_readErrorPage( STATUS_500 );
+		else
+			_setMsgStatusLine( STATUS_200 );
+	}
+	else
+	{
 		// create GET response
 		if ( !_readFile( _paths.responseUri ) )
 			_readErrorPage( STATUS_500 );
 		else
 			_setMsgStatusLine( STATUS_200 );
-		
-		//_msgHeader["Content-Type"] = ;
-		_msgHeader["Content-Length"] = to_string(_msgBodyLength);
+	}
+
+	//_msgHeader["Content-Type"] = ;
+	_msgHeader["Content-Length"] = to_string(_msgBodyLength);
 }
 
 /* _handlePost:
@@ -224,6 +239,19 @@ void	Response::_handlePost()
 	_msgBody = "<!DOCTYPE html><html></html>";
 }
 
+/*
+*	Handles DELETE request.
+*	
+*/
+void	Response::_handleDelete()
+{
+	if (_deleteFile(_paths.responseUri) == true)
+		_setMsgStatusLine( STATUS_200 );
+	else {
+		std::cout << GREEN << "Error deleting file" << RESET_PRINT << std::endl;
+		_readErrorPage( STATUS_404 );
+	}
+}
 
 /* _readErrorPage:
 *	Reads the error page corresponding to the given http status code
@@ -231,7 +259,7 @@ void	Response::_handlePost()
 */
 void	Response::_readErrorPage( HttpStatusCode httpStatus )
 {
-	std::cout << RED << "_readErrorPage()" << RESET_PRINT << std::endl;
+	std::cout << RED << "_readErrorPage("<< httpStatus << ")" << RESET_PRINT << std::endl;
 
 	_setMsgStatusLine( httpStatus );
 
@@ -320,6 +348,49 @@ bool	Response::_saveFile( std::string path, std::string content, ssize_t content
 	return true;
 }
 
+bool	Response::_deleteFile( std::string path )
+{
+	const char* filename = path.c_str();
+
+    if (std::remove(filename) != 0)
+        return false;
+	else
+		return true;
+}
+
+std::string Response::_buildDirectoryHtmlElement(std::string dirName, bool isDirectory)
+{
+	if (isDirectory == true)
+    	return ("<li><a href=" + dirName + "/" + ">" + dirName + "</a></li>");
+	else
+    	return ("<li><a href=" + dirName + ">" + dirName + "</a></li>");
+}
+
+bool	Response::_readDir( std::string path )
+{
+	DIR* dir = opendir(path.c_str());
+    std::string htmlBody1("<!DOCTYPE html> <html> <head> <title>List of Directories</title> </head> <body> <h1>List of Directories</h1> <ul>");
+    std::string dirList("");
+    std::string htmlBody2("</ul> </body> </html>");
+    if (!dir) {
+        return (false);
+    }
+
+
+    struct dirent* entry;
+    while ((entry = readdir(dir))) 
+	{
+        // Filter out "." entries
+        if (std::strcmp(entry->d_name, ".") == 0)
+            continue;
+        dirList += _buildDirectoryHtmlElement(entry->d_name, isDirectory(path + 
+																entry->d_name));
+    }
+	_msgBody = htmlBody1 + dirList + htmlBody2;
+	_msgBodyLength = _msgBody.size();
+    closedir(dir);
+	return (true);
+}
 
 
 /* _readHttpStatusCodeDatabase:
@@ -403,61 +474,25 @@ ssize_t		Response::getMsgLength() const
 /**************************************************************/
 
 
-// /* buildResponse():
-// *	Build the response corresponding to the _request and stores it in _response.
-// *	1st draft contains:
-// *		- filling out all values from _request
-// *		- "Hello World" in the body
-// *		- status line ("HTTP/1.1 200 OK"), "Content-Length" (text/html) and "Content-Length" in the header
-// */
-// void	Response::_buildResponse( std::string path )
+// /* FOR CGI-TESTING */
+// void	ClientSocket::_buildResponseCGI( std::string path, RequestParser rp)
 // {
-// 	std::string prefix1 = "/";
-// 	std::string prefix2 = "/surfer.jpeg";
-// 	std::string prefix3 = "/giga-chad-theme.mp3";
-
-// 	//if (_request.buffer.find(prefix1) == 0)
-// 	if ( path == prefix1 )
-// 	{
-// 		_msgBody = _readFile( "./html" + path + "index.html" );
-// 		//_msgBody = "Hello World\n";
-// 		std::stringstream	strStream;
-// 		strStream << (_msgBody.length());
-
-// 		_msgStatusLine = PROTOCOL_VERSION; 
-// 		_msgStatusLine += " 200 OK\r\n";
-// 		_msgHeader += "Content-Type: text/html\r\n";	
-// 		_msgHeader += "Content-Length: " + strStream.str() + "\r\n";
-// 		_msgHeader += "Connection: close\r\n";
-// 		_msgHeader += "\r\n";
-// 	}
-// 	else if ( path == prefix2 )
-// 	{
-// 		_msgBody = _readFile( "./html" + path );
-// 		std::stringstream	strStream;
-// 		strStream << (_msgBody.length());
-
-// 		_msgStatusLine = PROTOCOL_VERSION; 
-// 		_msgStatusLine += " 200 OK\r\n";
-// 		_msgHeader += "Content-Type: image/*\r\n";
-// 		_msgHeader += "Content-Length: " + strStream.str() + "\r\n";
-// 		_msgHeader += "Connection: close\r\n";
-// 		_msgHeader += "\r\n";
-// 	}
-// 	else if ( path == prefix3 )
-// 	{
-// 		_msgBody = _readFile( "./html" + path );
-// 		std::stringstream	strStream;
-// 		strStream << (_msgBody.length());
-
-// 		_msgStatusLine = PROTOCOL_VERSION; 
-// 		_msgStatusLine += " 200 OK\r\n";
-// 		_msgHeader += "Content-Type: audio/*\r\n";
-// 		_msgHeader += "Content-Length: " + strStream.str() + "\r\n";
-// 		_msgHeader += "Connection: close\r\n";
-// 		_msgHeader += "\r\n";
-// 	}
-// 	_msgLength = _msgStatusLine.length() + _msgHeader.length() + _msgBody.length();
+// 	path = "";
+// 	std::string output;
+// 	CGIHandler CGIHandler(rp);
+// 	output = CGIHandler.execute(rp);
+// 	_response.body = output;
+// 	std::stringstream	strStream;
+// 	strStream << (_response.body.length());
+	
+// 	_response.header = "HTTP/1.1 200 OK\r\n";
+// 	if (rp.getType() == CSS)
+// 		_response.header += "Content-Type: text/css\r\n";
+// 	else
+// 		_response.header += "Content-Type: text/html\r\n";
+// 	_response.header += "Content-Length: " + strStream.str() + "\r\n";
+// 	_response.header += "\r\n";
+// 	_response.contentLength = _response.header.length() + _response.body.length();
 // }
 
 // /* FOR CGI-TESTING */

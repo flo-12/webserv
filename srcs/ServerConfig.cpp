@@ -3,6 +3,20 @@
 /*------------------------------ PUBLIC METHODS -----------------------------*/
 
 /*
+*   Receives a location key, that will always match a Location specfied in the
+*   server config. Checks whether ther is a "return" field specfied, to define
+*   the redirection. If there is no return (i.e. redirection) for the current
+*   location, returns a StatusCode of 0 and an empty String
+*/
+std::pair<HttpStatusCode, std::string>   ServerConfig::getRedirection(std::string locationKey)
+{
+    std::pair<std::string, ServerLocation> location;
+
+    return(_serverLocations[locationKey].getReturn());
+
+}
+
+/*
 *   Given the HTTP status code, connects the root directory of the server with
 *   the directory of the error page. If no error page is found, an empty string
 *   is returned
@@ -34,33 +48,47 @@ std::string ServerConfig::retrievePathErrorPage(const HttpStatusCode errorStatus
         => use path in "root" as prefix to filename/path
 *   4. Location does not specifiy a "root"
         => use "root" member from ther ServerConfig
+*   When the location specifies an autoindex, a '/' is appended at the end
+*   instead of a file
 */
 std::string ServerConfig::getUri(std::string locationKey, std::string requestUri)
 {
-    // do I have to handle the autoindex here as well?
-
-    bool    hasFilename = true;
+    // bool    hasFilename = true;
     std::string fileName;
-    std::string pathPrefix;
+    std::string root;
+    std::string pathSuffix;
 
-    if (requestUri[requestUri.length() -1 ] == '/')
-        hasFilename = false;
-    
-    pathPrefix = _serverLocations[locationKey].getRoot();
-    if (pathPrefix.empty())
-        pathPrefix = _root;
+    // get root for path
+    root = _serverLocations[locationKey].getRoot();
+    if (root.empty())
+        root = _root;
 
-    if (hasFilename == true) {
-		//fileName = requestUri.substr(locationKey.length() + 1, requestUri.length());
-		fileName = requestUri.substr(locationKey.length(), requestUri.length());	// fbecht changed here
-	}
-    else 
+	// remove locationKey from string
+    pathSuffix = requestUri.substr(locationKey.length(), requestUri.length());
+
+    // check if location has autoindex
+    if (requestUri[requestUri.length() - 1 ] == '/' &&
+            _serverLocations[locationKey].getAutoindex() == true)
+    {
+		if (pathSuffix[pathSuffix.size() - 1 == '/'])
+            return (root + pathSuffix);
+        else
+            return (root + pathSuffix + "/");
+    }
+    // check if Uri already specified a file, if not add based on "index"
+    if (pathSuffix.empty() || pathSuffix == "/")
     {
         fileName = _serverLocations[locationKey].getIndex();
         if (fileName.empty())
-            fileName = _index;
+            fileName =  "/" + _index;
     }
-    return (pathPrefix + "/" + fileName);
+    // std::cout << "Prefix " << root << std::endl; 
+    // std::cout << "Suffix " << pathSuffix << std::endl; 
+    // std::cout << "FileName " << fileName << std::endl; 
+
+    if (pathSuffix[0] != '/')
+        pathSuffix = "/" + pathSuffix;
+    return (root + pathSuffix + fileName);
 }
 
 /*
@@ -69,31 +97,38 @@ std::string ServerConfig::getUri(std::string locationKey, std::string requestUri
 *   To do so it first has to extract the requested directory from the URI request.
 *   e.g. /home/test/index.html => /home/test. It will subsequently remove more 
 *   directories if no matches are found. Since the location "/" will always be
-*   provided, this is returned when there are no other matches
+*   provided, this is returned when there are no other matches.
 */
 std::string ServerConfig::getLocationKey(std::string requestUri)
 {
-    // do I have to handle the autoindex here as well?
-
-    int         dir_depth = 0;
     std::string directory;
+    std::string fileExt;
 
-    for (size_t i = 0; i < requestUri.length(); i++) {
-        if (requestUri[i] == '/') {
-            dir_depth++;
+    // test if request URI matches CGI
+    fileExt = extractFileExtension(requestUri);
+    if (!fileExt.empty())
+    {
+        for (std::map<std::string, ServerLocation>::const_iterator it = _serverLocations.begin(); 
+            it != _serverLocations.end(); ++it)
+        {
+            if (it->first == fileExt)
+                return (it->first);
         }
     }
+
+    // test if URI matches path in Locations
     directory = requestUri;
-    while (dir_depth > 0)
+    while (!directory.empty())
     {
+        size_t lastSlash = directory.find_last_of('/');
+        directory = directory.substr(0, lastSlash);
+
         for (std::map<std::string, ServerLocation>::const_iterator it = _serverLocations.begin(); 
             it != _serverLocations.end(); ++it)
         {
             if (it->first == directory)
                 return (it->first);
         }
-        directory = requestUri.substr(0, directory.rfind('/'));
-        dir_depth--;
     }
     return ("/");
 }
@@ -126,9 +161,14 @@ unsigned int ServerConfig::_ipStringToInt(const std::string ipAddress) {
     return (ip);
 }
 
-void    ServerConfig::_setDefaultErrorPages(void)
+/*
+*   compares if there has been a custom route for the error pages. If not
+*   adds a default route for. Returns true if any routes have been set.
+*/
+bool    ServerConfig::_setDefaultErrorPages(void)
 {
     int numDefaultErrorLocations = 7;
+    bool    b = false;
 
     HttpStatusCode arrErrorCodes[] = {
         static_cast<HttpStatusCode>(400),
@@ -140,34 +180,52 @@ void    ServerConfig::_setDefaultErrorPages(void)
         static_cast<HttpStatusCode>(504)
     };
     std::string arrErrorDefaultLocations[] = {
-        "error_pages/400.html",
-        "error_pages/403.html",
-        "error_pages/404.html",
-        "error_pages/405.html",
-        "error_pages/408.html",
-        "error_pages/500.html",
-        "error_pages/504.html",
+        "/error_pages/400.html",
+        "/error_pages/403.html",
+        "/error_pages/404.html",
+        "/error_pages/405.html",
+        "/error_pages/408.html",
+        "/error_pages/500.html",
+        "/error_pages/504.html",
     };
 
     for (int i = 0; i < numDefaultErrorLocations; i ++)
     {
         if (_errorPage.find(arrErrorCodes[i]) == _errorPage.end())
         {
-            std::cout   << "\033[33m WARNING:\033[0m " << "no error page " << arrErrorCodes[i] <<
-                     " provided, default set to " << arrErrorDefaultLocations[i] << std::endl;
+            std::cout   << YELLOW << "WARNING: " << RESET_PRINT << "no error page " 
+                        << arrErrorCodes[i] << " provided, default set to " 
+                        << arrErrorDefaultLocations[i] << std::endl;
             _errorPage.insert(std::make_pair(arrErrorCodes[i], 
                                                 arrErrorDefaultLocations[i]));
+            b = true;
         }
     }
+    return (b);
 }
 
-void    ServerConfig::_setDefaultLocations(void)
+bool    ServerConfig::_setDefaultLocations(void)
 {
-    // _serverLocations.insert(std::make_pair("/", ServerLocation()));
-    // _serverLocations.insert(std::make_pair("/cgi", ServerLocation()));
-    // _serverLocations["/cgi"].cgiExtension(".py");
-    // _serverLocations["/cgi"].cgiPath("/usr/bin/py");
-    // _serverLocations["/cgi"].index("script.py");
+    bool                                                    b = false;
+    std::map<std::string, ServerLocation>::const_iterator   it;
+    
+    it = _serverLocations.find("/");
+    if (it == _serverLocations.end())
+    {
+        std::cout   << YELLOW << "Warning: " << RESET_PRINT << "no location "
+                    << "/" << " provided, setting default\n";
+       _serverLocations.insert(std::make_pair("/", ServerLocation()));
+       b = true;
+    }
+    it = _serverLocations.find("/uploads");
+    if (it == _serverLocations.end())
+    {
+        std::cout   << YELLOW << "Warning: " << RESET_PRINT << "no location "
+                    << "/uploads" << " provided, setting default\n";
+       _serverLocations.insert(std::make_pair("/uploads", ServerLocation())); 
+        b = true;
+    }
+    return (b);
 }
 
 /*
@@ -175,23 +233,26 @@ sets default configurations for the server name, error pages and location
 */
 void    ServerConfig::_setDefaultConfig(int index)
 {
+    (void)index;
+
+    _setDefaultErrorPages(); 
+    _setDefaultLocations();
+        // std::cout   << YELLOW << " SERVER CONFIGURATION [" << index + 1
+        //             << "] " << RESET_PRINT << " \n";
+    
+    // display warings here as well
     if (_serverName.empty())
-    {
-        std::stringstream ss;
-        ss << "server_" << index;
-        _serverName = ss.str();
-    }
-    if (_errorPage.empty())
-        _setDefaultErrorPages();
-    if (_serverLocations.empty())
-        _setDefaultLocations();
+        _serverName = "server_" +  to_string(index);
+    if (_clientMaxBodySize == 0)
+        _clientMaxBodySize = 300000;
+    if (_index.empty())
+        _index = "index.html";
 }
 
 /*
 receives a lineStream object with one or multiple key value pairs for the error
 pages. Stores them in the std::map<int, std::string> errorPage of ServerConfig
 */
-
 void ServerConfig::_parseErrorPages(std::istringstream &lineStream) {
     int errorCode;
     std::string errorPage;
@@ -286,7 +347,15 @@ std::string ServerConfig::getIndex(void) const
 
 std::map<HttpStatusCode, std::string>  ServerConfig::getErrorPages(void) const
 {
-    return (_errorPage);
+    // adds the "root" prefix to each errorPages path
+    std::map<HttpStatusCode, std::string>   copyErrorPages(_errorPage);
+
+    for (std::map<HttpStatusCode, std::string>::iterator it = copyErrorPages.begin();
+            it != copyErrorPages.end(); ++it)
+    {
+        it->second = _root + it->second;
+    } 
+    return (copyErrorPages);
 }
 
 std::map<std::string,ServerLocation> ServerConfig::getLocations(void) const
@@ -307,12 +376,6 @@ ServerConfig::ServerConfig(void)
 }
 
 
-bool compareKeyLength(const std::pair<std::string, ServerLocation>& a, 
-    const std::pair<std::string, ServerLocation>& b) 
-{
-    return a.first.length() < b.first.length();
-}
-
 /*
 Constructor which is called when a config file is provided.
 it parses the content of a previously extracted server{...} block and
@@ -324,14 +387,25 @@ ServerConfig::ServerConfig(std::stringstream &serverBlock, int index,
     _clientMaxBodySize(DEFAULT_CLIENT_MAX_BODY_SIZE), _index(DEFAULT_INDEX), 
     _errorPage(), _serverLocations(), _decimalIPaddress(0)
 {
+    std::string error("");
+
     _parseServerConfig(serverBlock);
     _decimalIPaddress = _ipStringToInt(_host);
     _serverLocations = vecLB;
-    _setDefaultErrorPages();
-    (void)index;
 
-    // if not all arguments are provided set default things ???
-    // _setDefaultConfig(index);
+    _setDefaultConfig(index);
+    
+    // validation of ServerLocation
+    for (std::map<std::string, ServerLocation>:: const_iterator it = _serverLocations.begin();
+            it != _serverLocations.end(); it++)
+    {
+        error += it->second.validate();
+    }
+
+    // I probably need a seperate validation for the CGI location
+
+    if (!error.empty())
+        throw(std::runtime_error( "\033[0;31mError\033[0m while parsing config file \n" + error));
 }
 
 ServerConfig::ServerConfig(const ServerConfig &copy)
@@ -345,7 +419,6 @@ ServerConfig::ServerConfig(const ServerConfig &copy)
 
 ServerConfig& ServerConfig::operator=(const ServerConfig &other)
 {
-    // std::cout << "ServerConfig assignment called" << std::endl;
     if (this != &other)
     {
         _ports = other._ports;
@@ -367,9 +440,6 @@ ServerConfig::~ServerConfig(void)
 
 /*-------------------------- OPERATOR OVERLOADING ---------------------------*/
 
-/*
-prints all properties of the ServerConfig class to std::cout
-*/
 std::ostream& operator<<(std::ostream& os, const ServerConfig& serverConfig) 
 {
     
@@ -386,14 +456,16 @@ std::ostream& operator<<(std::ostream& os, const ServerConfig& serverConfig)
     os << "Client Max Body Size:    " << serverConfig.getClientMaxBodySize() << "\n";
     os << "Index:                   " << serverConfig.getIndex() << "\n";
     os << "Error Pages:\n";
-    for (std::map<HttpStatusCode, std::string>::const_iterator it = serverConfig._errorPage.begin();
-            it != serverConfig._errorPage.end(); ++it) 
+    std::map<HttpStatusCode, std::string>   errorPageCopy(serverConfig.getErrorPages());
+    for (std::map<HttpStatusCode, std::string>::const_iterator it = errorPageCopy.begin();
+            it != errorPageCopy.end(); ++it) 
     {
         os << " " << it->first << ": " << it->second << "\n";
     }
     os << "\n";
-    for (std::map<std::string, ServerLocation>::const_iterator it = serverConfig._serverLocations.begin(); 
-            it != serverConfig._serverLocations.end(); ++it) {
+    std::map<std::string, ServerLocation> serverLocationCopy(serverConfig.getLocations());
+    for (std::map<std::string, ServerLocation>::const_iterator it = serverLocationCopy.begin(); 
+            it != serverLocationCopy.end(); ++it) {
         os << "\033[92m---------- Location: " << it->first << " -----------\033[0m\n";
         os << it->second;
         os << std::endl;

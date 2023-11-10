@@ -4,9 +4,11 @@
 
 void    ConfigParser::print(void) const
 {
-    for (size_t i = 0; i < _serverConfigs.size(); ++i) 
+    for (size_t i = 0; i < serverConfigs().size(); ++i) 
     {
-        std::cout << serverConfigs()[i] << "\n";
+        // std::cout   << RED << "Server configuration [" << i + 1 << "] " 
+                    // << RESET_PRINT << std::endl;
+        std::cout   << serverConfigs()[i] << "\n";
     }
 }
 
@@ -16,11 +18,11 @@ std::vector<t_ipPort> ConfigParser::getIpPort(void)
 
     for (size_t i = 0; i < _serverConfigs.size(); i++)
     {
-        for (size_t j = 0; j < _serverConfigs[i]._ports.size(); j++)
+        for (size_t j = 0; j < _serverConfigs[i].getPorts().size(); j++)
         {
             t_ipPort tmp;
-            tmp.ip = _serverConfigs[i]._decimalIPaddress;
-            tmp.port = _serverConfigs[i]._ports[j];
+            tmp.ip = _serverConfigs[i].getDecimalIPaddress();
+            tmp.port = _serverConfigs[i].getPorts()[j];
             vecIpPort.push_back(tmp);
         }
     }
@@ -132,19 +134,15 @@ std::vector<ServerConfig> ConfigParser::serverConfigs(void) const
 
     for (size_t i = 0; i < _serverConfigs.size(); i++)
     {
-        for (size_t j = 0; j < _serverConfigs[i]._ports.size(); j++)
+        for (size_t j = 0; j < _serverConfigs[i].getPorts().size(); j++)
         {
             ServerConfig    tmp(_serverConfigs[i]);
 
-            (tmp._ports).clear();
-            (tmp._ports).push_back(_serverConfigs[i]._ports[j]);
+            (tmp.getPorts()).clear();
+            (tmp.getPorts()).push_back(_serverConfigs[i].getPorts()[j]);
             extendedServerConfigs.push_back(tmp);
         }
     }
-    // for (size_t i = 0; i < extendedServerConfigs.size(); i++)
-    // {
-    //     std::cout << extendedServerConfigs[i] << std::endl;
-    // }
     return (extendedServerConfigs);
 }
 

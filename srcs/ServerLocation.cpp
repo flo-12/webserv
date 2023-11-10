@@ -21,6 +21,42 @@ void    ServerLocation::_parseMethods(std::istringstream &lineStream)
     }
 }
 
+/*
+*   Checks prerequsites for a path, in case of error returns false; Prerequisites:
+        - Methods must be either GET, POST, DELETE, also cannot be empty
+        - If autoindex and index are mutally exclusive
+        - Status codes outside of the range of 301 to 308 or return
+*/
+std::string ServerLocation::validate(void) const
+{
+    std::string errorReturn("");
+
+    if (_methods.empty())
+        errorReturn += "\t must specify 'allow_methods'\n";
+
+    // unknown method
+    size_t i;
+    for (i = 0; i < _methods.size(); i++)
+    {
+        if (_methods[i] == GET || _methods[i] == POST || _methods[i] == DELETE)
+            continue;
+        else
+            break;
+    }
+    if (i != _methods.size())
+        errorReturn += "\t method not supported. Please use GET, POST, DELETE\n";
+
+    // autoindex <-> index
+    if (_autoindex == true && !_index.empty())
+        errorReturn += "\t autoindex active, cannot serve a default index\n";
+
+    // return HTTP status code
+    if (_return.first != 0 && (_return.first < 301 || _return.first > 308))
+        errorReturn += "\t HTTP status code for redirection is out or rage (301 - 308)\n";
+
+
+    return (errorReturn);
+}
 
 /*--------------------------- GETTERS AND SETTERS ---------------------------*/
 
@@ -39,7 +75,7 @@ bool    ServerLocation::getAutoindex(void) const
     return (_autoindex);
 }
 
-std::string ServerLocation::getReturn(void) const
+std::pair<HttpStatusCode, std::string> ServerLocation::getReturn(void) const
 {
     return (_return);
 }
@@ -54,18 +90,36 @@ std::string ServerLocation::getCgiPath(void) const
     return (_cgiPath);
 }
 
-std::string ServerLocation::getCgiExtension(void) const
+bool    ServerLocation::getIsCgi(void) const
 {
-    return (_cgiExtension);
+    return (_isCgi);
 }
-
 
 /*------------------- CONSTRUCTOR, ASSIGNEMENT, DESTRUCTOR ------------------*/
 
 ServerLocation::ServerLocation()
-    :   _index(""), _methods(), _autoindex(false), _return(""), _root(""),
-        _cgiPath(""), _cgiExtension("")
+    :   _index(""), _methods(), _autoindex(false), _root(""),
+        _cgiPath(""), _isCgi(0)
 {
+}
+
+std::pair<HttpStatusCode, std::string> parseStatusCodeStringPair(std::istringstream &lineStream,
+                                        const std::string &key)
+{
+    int                                     statusCode;
+    std::string                             str;
+    std::pair<HttpStatusCode, std::string>  newPair;
+
+    (void) key; // might use it later to give more precise runtime_error
+
+    if (lineStream >> statusCode >> str)
+    {
+        return (std::make_pair(static_cast<HttpStatusCode>(statusCode), str));
+    }
+    else
+    {
+            throw(std::runtime_error("Error, incomplete key value pair"));
+    }
 }
 
 ServerLocation::ServerLocation(std::stringstream &locationBlock)
@@ -89,15 +143,19 @@ ServerLocation::ServerLocation(std::stringstream &locationBlock)
             _autoindex = (value == "on");
         }
         else if (key == "index")
-            lineStream >> _index;
+            _index = parseSingleValueString(lineStream, key);
         else if (key == "return")
-            lineStream >> _return;
+            _return = parseStatusCodeStringPair(lineStream, key);
         else if (key == "root")
-            lineStream >> _root;
+            _root = parseSingleValueString(lineStream, key);
         else if (key == "cgi_path")
-            lineStream >> _cgiPath;
-        else if (key == "cgi_ext")
-            lineStream >> _cgiExtension;
+            _cgiPath = parseSingleValueString(lineStream, key);
+        else if (key == "is_cgi")
+        {
+            lineStream >> value;
+            std::cout << value;
+            _autoindex = (value == "true");
+        }
         else
             throw (std::runtime_error("Error, unknown keyword: " + key));
     }
@@ -105,8 +163,8 @@ ServerLocation::ServerLocation(std::stringstream &locationBlock)
 
 ServerLocation::ServerLocation(const ServerLocation& copy)
     :   _index(copy._index), _methods(copy._methods), _autoindex(copy._autoindex),
-        _return(copy._return), _root(copy._root), _cgiPath(copy._cgiPath),
-        _cgiExtension(copy._cgiExtension)
+        _return(copy._return), _root(copy._root), _cgiPath(copy._cgiPath), 
+        _isCgi(copy._isCgi)
 {
 }
 
@@ -120,7 +178,7 @@ ServerLocation& ServerLocation::operator=(const ServerLocation& other)
         _return = other._return;
         _root = other._root;
         _cgiPath = other._cgiPath;
-        _cgiExtension = other._cgiExtension;
+        _isCgi = other._isCgi;
     }
     return (*this);
 }
@@ -131,19 +189,26 @@ ServerLocation::~ServerLocation(void)
 /*-------------------------- OPERATOR OVERLOADING ---------------------------*/
 
 std::ostream& operator<<(std::ostream& os, const ServerLocation& serverLocation) {
-    os << "Index:           " << serverLocation.getIndex() << "\n";
     os << "Allowed Methods: ";
     for (size_t i = 0; i < serverLocation.getMethods().size(); ++i) {
-        os << serverLocation.getMethods()[i];
+        os << httpMethodToString(serverLocation.getMethods()[i]);
         if (i < serverLocation.getMethods().size() - 1) {
             os << ", ";
         }
     }
     os << "\n";
     os << "Autoindex:       " << (serverLocation.getAutoindex() ? "On" : "Off") << "\n";
-    os << "Return:          " << serverLocation.getReturn() << "\n";
-    os << "Root:            " << serverLocation.getRoot() << "\n";
-    os << "CGI path:        " << serverLocation.getCgiPath() << "\n";
-    os << "CGI extension:   " << serverLocation.getCgiExtension() << "\n";
+    std::pair<HttpStatusCode, std::string> returnCopy = serverLocation.getReturn();
+    if (!serverLocation.getIndex().empty())
+        os << "Index:           " << serverLocation.getIndex() << "\n";
+    if (returnCopy.first != 0)
+        os << "Return:          " << returnCopy.first << " " << returnCopy.second << "\n";
+    if (!serverLocation.getRoot().empty())
+        os << "Root:            " << serverLocation.getRoot() << "\n";
+    // if (serverLocation.getIsCgi() == true)
+    // {
+    os << "Is CGI:          " << serverLocation.getIsCgi() << "\n";
+        // os << "CGI path:        " << serverLocation.getCgiPath() << "\n";
+    // }
     return os;
 }

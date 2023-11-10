@@ -35,5 +35,31 @@
 		<br>
 		<button type="submit">Submit</button>
 	</form>
+	
+	<h1>DELETE request</h1>
+	<button onclick="sendDeleteRequest()">Delete Resource</button>
+
+		<script>
+		function sendDeleteRequest() {
+			fetch('/uploads/test', {
+				method: 'DELETE',
+				headers: {
+					'Content-Type': 'application/json', // Adjust content type as needed
+					// Include any other headers as needed
+				},
+				// Include request body if needed (e.g., for sending JSON data)
+				// body: JSON.stringify({ key: 'value' }),
+			})
+			.then(response => {
+				if (!response.ok) {
+					throw new Error('Network response was not ok');
+				}
+				console.log('DELETE request successful');
+			})
+			.catch(error => {
+				console.error('Error making DELETE request:', error);
+			});
+		}
+</script>
 </body>
 </html>

@@ -7,18 +7,18 @@
 # include <sstream>
 # include <map>
 # include <cstdlib>
-# include <algorithm> // for std::sort
+# include <algorithm>
 # include "ServerLocation.hpp"
 # include "common.hpp"
 
 class ServerConfig {
-    friend class ConfigParser;
 public:
 
     // public methods - for building Response 
     std::string                             getLocationKey(std::string requestUri);
     std::string                             getUri(std::string locationKey, std::string requestURI);
     std::string                             retrievePathErrorPage(HttpStatusCode errorStatus);
+    std::pair<HttpStatusCode, std::string>  getRedirection(std::string locationKey);
 
     // Getters
     std::string                             getPort(void) const;
@@ -40,19 +40,20 @@ public:
 	ServerConfig(void);
     ~ServerConfig(void);
 
-    // Operator Overloading 
-    friend std::ostream& operator<<(std::ostream& os,
-        const ServerConfig& serverConfig);
-
 private:
-    // parsing
-    void            _setDefaultErrorPages(void);
-    void            _setDefaultLocations(void);
+    // default settings
+    bool            _setDefaultErrorPages(void);
+    bool            _setDefaultLocations(void);
     void            _setDefaultConfig(int index);
+    
+    // parsing
     void            _parseErrorPages(std::istringstream &lineStream);
     void            _parseServerConfig(std::stringstream &serverBlock);
     unsigned int    _ipStringToInt(const std::string ipAddress);
-    
+
+    // validate config
+    // bool    validate;
+
     std::vector<int>                        _ports;
     std::string                             _host;
     std::string                             _root;
@@ -63,7 +64,8 @@ private:
     std::map<std::string, ServerLocation>   _serverLocations;
     unsigned int                            _decimalIPaddress;
     
-    // bool    validateConfig();
 };
+
+std::ostream& operator<<(std::ostream& os, const ServerConfig& serverConfig);
 
 # endif

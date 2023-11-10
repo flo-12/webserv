@@ -5,6 +5,7 @@
 # include <string>
 # include <sstream>
 # include <sys/types.h>
+#include <sys/stat.h>
 
 
 /**************************************************************/
@@ -65,6 +66,15 @@ typedef enum e_HttpStatusCode
 	STATUS_200 = 200,
 	STATUS_201 = 201,
 	STATUS_202 = 202,
+	STATUS_204 = 204,
+	STATUS_206 = 206,
+	STATUS_300 = 300,
+	STATUS_301 = 301,
+	STATUS_302 = 302,
+	STATUS_303 = 303,
+	STATUS_304 = 304,
+	STATUS_307 = 307,
+	STATUS_308 = 308,
 	STATUS_400 = 400,
 	STATUS_403 = 403,
 	STATUS_404 = 404,
@@ -76,13 +86,18 @@ typedef enum e_HttpStatusCode
 } HttpStatusCode;
 
 
+
+
 /**************************************************************/
 /*                       FUNCTIONS                            */
 /**************************************************************/
 
-std::vector<int> 			parseMultiValueInt(std::istringstream& lineStream);
-std::string					to_string( ssize_t nbr );
-std::string					to_string( HttpStatusCode nbr );
-std::string					parseSingleValueString(std::istringstream &lineStream, const std::string &whichLine);
+std::vector<int>	parseMultiValueInt(std::istringstream& lineStream);
+std::string			to_string( ssize_t nbr );
+std::string			to_string( HttpStatusCode nbr );
+std::string			parseSingleValueString(std::istringstream &lineStream, const std::string &whichLine);
+bool				isDirectory(const std::string path);
+std::string			extractFileExtension(const std::string &str);
+std::string			httpMethodToString(httpMethod method);
 
 #endif

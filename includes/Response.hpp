@@ -14,6 +14,7 @@
 #include <cstdio>
 #include <unistd.h>
 #include <cstdlib>
+#include <dirent.h>
 
 
 typedef struct s_StatusLine
@@ -50,18 +51,22 @@ class Response
 		std::string							_msgBody;
 		ssize_t								_msgBodyLength;
 
-		void	_readHttpStatusCodeDatabase();
-		void	_setPaths( std::string reqUri );
-		void	_setMsgStatusLine( HttpStatusCode httpStatus );
+		void		_readHttpStatusCodeDatabase();
+		void		_setPaths( std::string reqUri );
+		std::string _buildDirectoryHtmlElement(std::string dirName, bool isDirectory);
+		void		_setMsgStatusLine( HttpStatusCode httpStatus );
 
 		bool	_checkPreconditions();
 		bool	_checkRedirection();
 
 		void	_handleGet();
 		void	_handlePost();
+		void	_handleDelete();
 		void	_readErrorPage( HttpStatusCode httpStatus );
 		bool	_readFile( std::string path );
 		bool	_saveFile( std::string path, std::string content, ssize_t contentLength );
+		bool	_deleteFile( std::string path );
+		bool	_readDir( std::string path );
 
 		// Prototyping
 		// void		_buildResponse( std::string path );

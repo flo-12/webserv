@@ -1,0 +1,15 @@
+body, html {
+    height: 100%;
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.centeredHeader {
+    text-align: center;
+}
+
+h1 {
+    font-size: 2em;
+}

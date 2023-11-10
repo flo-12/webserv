@@ -36,7 +36,6 @@ Response::Response( RequestParser request, ServerConfig config )
 
 	_method = request.getMethod();
 	_setPaths( request.getPath() );
-	_isCGI = _getCgiNeeded();
 
 	if ( _method != POST && !_checkPreconditions( ) )	// check again the _method!=POST
 		_readErrorPage( _msgStatusLine.statusCode );
@@ -189,12 +188,6 @@ bool	Response::_checkRedirection()
 */
 void	Response::_handleGet()
 {
-	/* CGI-PART!!! */
-	/* if ( _config.getLocations[_paths.confLocKey].getCgiPath() != "" ) {
-		// call CGI
-	}
-	else { */
-	
 	// Check autoindex
 	if (_paths.responseUri[_paths.responseUri.length() - 1] == '/')
 	{
@@ -203,6 +196,13 @@ void	Response::_handleGet()
 			_readErrorPage( STATUS_500 );
 		else
 			_setMsgStatusLine( STATUS_200 );
+	}
+	else if ( _isCgiNeeded() ) {
+		// call CGI
+		CGIHandler	CGIHandler( _request );
+		_msgBody = CGIHandler.execute( _request );	// change: execute is called by default constructor and CGIHandler has a getBody method
+		_msgBodyLength = _msgBody.length();	// change: CGIHandler.getBodyLength()
+		_setMsgStatusLine( STATUS_200 );	// check for errors!!!!
 	}
 	else
 	{
@@ -230,16 +230,25 @@ void	Response::_handlePost()
 		// call CGI */
 	
 	// Prototype for file upload
-	std::cout << " ++++++++++++++++++++++ POST request ++++++++++++++++++++++" << std::endl;
+	/* std::cout << " ++++++++++++++++++++++ POST request ++++++++++++++++++++++" << std::endl;
 	std::cout << _request.getBody() << std::endl;
-	std::cout << " +++++++++++++++++++++++++++++++++++++++++++++++++++++++++" << std::endl;
+	std::cout << " +++++++++++++++++++++++++++++++++++++++++++++++++++++++++" << std::endl; */
 
-
-	_setMsgStatusLine( STATUS_201 );
-	_msgBodyLength = 19;
-	_msgHeader["Content-Length"] = to_string(_msgBodyLength);
-	_msgHeader["Content-Type"] = "text/html";
-	_msgBody = "<!DOCTYPE html><html></html>";
+	if ( _isCgiNeeded() ) {
+		// call CGI
+		CGIHandler	CGIHandler( _request );
+		_msgBody = CGIHandler.execute( _request );	// change: execute is called by default constructor and CGIHandler has a getBody method
+		_msgBodyLength = _msgBody.length();	// change: CGIHandler.getBodyLength()
+		_setMsgStatusLine( STATUS_200 );	// check for errors!!!!
+		_msgHeader["Content-Length"] = to_string(_msgBodyLength);
+	}
+	else {
+		_setMsgStatusLine( STATUS_201 );
+		_msgBodyLength = 19;
+		_msgHeader["Content-Length"] = to_string(_msgBodyLength);
+		_msgHeader["Content-Type"] = "text/html";
+		_msgBody = "<!DOCTYPE html><html></html>";
+	}
 }
 
 /*
@@ -476,15 +485,19 @@ ssize_t		Response::getMsgLength() const
 /*                  PROTOTYPING METHODS                       */
 /**************************************************************/
 
-/* _getCgiNeeded:
+/* __isCgiNeeded:
 *	Checks if CGI is needed for the request.
 *		
 *	Returns true if CGI is needed, false otherwise.
 */
-bool	Response::_getCgiNeeded()
+bool	Response::_isCgiNeeded()
 {
-	//_request.getTypes();
-	return false;
+	std::cout << "request.getType()=" << _request.getType() << std::endl;
+
+	if ( (_method == GET || _method == POST) && (_request.getType() == PHP || _request.getType() == PY) )
+		return true;
+	else
+		return false;
 }
 
 // /* FOR CGI-TESTING */

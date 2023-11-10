@@ -40,7 +40,6 @@ class Response
 		RequestParser						_request;		
 		ServerConfig						_config;
 		std::string							_httpVersionAllowed;
-		bool								_isCGI;
 
 		t_paths								_paths;
 		std::map<int, std::string>			_httpStatusCodeLookup;
@@ -58,7 +57,7 @@ class Response
 		void		_setMsgStatusLine( HttpStatusCode httpStatus );
 
 		bool	_checkPreconditions();
-		bool	_getCgiNeeded();
+		bool	_isCgiNeeded();
 		bool	_checkRedirection();
 
 		void	_handleGet();

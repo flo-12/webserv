@@ -39,27 +39,54 @@
 	<h1>DELETE request</h1>
 	<button onclick="sendDeleteRequest()">Delete Resource</button>
 
-		<script>
-		function sendDeleteRequest() {
-			fetch('/uploads/test', {
-				method: 'DELETE',
-				headers: {
-					'Content-Type': 'application/json', // Adjust content type as needed
-					// Include any other headers as needed
-				},
-				// Include request body if needed (e.g., for sending JSON data)
-				// body: JSON.stringify({ key: 'value' }),
-			})
-			.then(response => {
-				if (!response.ok) {
-					throw new Error('Network response was not ok');
-				}
-				console.log('DELETE request successful');
-			})
-			.catch(error => {
-				console.error('Error making DELETE request:', error);
-			});
-		}
-</script>
+	<script>
+	function sendDeleteRequest() {
+		fetch('/uploads/test', {
+			method: 'DELETE',
+			headers: {
+				'Content-Type': 'application/json', // Adjust content type as needed
+				// Include any other headers as needed
+			},
+			// Include request body if needed (e.g., for sending JSON data)
+			// body: JSON.stringify({ key: 'value' }),
+		})
+		.then(response => {
+			if (!response.ok) {
+				throw new Error('Network response was not ok');
+			}
+			console.log('DELETE request successful');
+		})
+		.catch(error => {
+			console.error('Error making DELETE request:', error);
+		});
+	}
+
+	</script>
+	<h1>POST CGI request</h1>
+		<button onclick="sendDeleteRequest()">Delete Resource</button>
+
+			<script>
+			function sendDeleteRequest() {
+				fetch('/RPN.php', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json', // Adjust content type as needed
+						// Include any other headers as needed
+					},
+					// Include request body if needed (e.g., for sending JSON data)
+					// body: JSON.stringify({ key: 'value' }),
+				})
+				.then(response => {
+					if (!response.ok) {
+						throw new Error('Network response was not ok');
+					}
+					console.log('DELETE request successful');
+				})
+				.catch(error => {
+					console.error('Error making DELETE request:', error);
+				});
+			}
+
+		</script>
 </body>
 </html>

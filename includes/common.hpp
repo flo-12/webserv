@@ -85,7 +85,15 @@ typedef enum e_HttpStatusCode
 	STATUS_505 = 505
 } HttpStatusCode;
 
-
+typedef enum e_fileExtension
+{
+	NONE,
+	HTML,
+	CSS,
+	JS,
+	PHP,
+	PY
+}	fileExtension;
 
 
 /**************************************************************/

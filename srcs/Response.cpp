@@ -36,6 +36,7 @@ Response::Response( RequestParser request, ServerConfig config )
 
 	_method = request.getMethod();
 	_setPaths( request.getPath() );
+	_isCGI = _getCgiNeeded();
 
 	if ( _method != POST && !_checkPreconditions( ) )	// check again the _method!=POST
 		_readErrorPage( _msgStatusLine.statusCode );
@@ -119,6 +120,7 @@ bool	Response::_checkPreconditions()
 	std::vector<httpMethod> methods = _config.getLocations()[_paths.confLocKey].getMethods();
 
 	for ( std::vector<httpMethod>::iterator it = methods.begin(); it != methods.end(); it++ ) {
+		std::cout << "Method: " << *it << std::endl;
 		if ( *it == _method )
 			break ;
 		else if ( it + 1 == methods.end() ) {
@@ -143,6 +145,7 @@ bool	Response::_checkPreconditions()
 	}
 
 	// check if Host field is present
+	std::cout << "Host: " << _request.getHost() << std::endl;
 	if ( _request.getHost() != _config.getHost() + ":" + _config.getPort() ) {
 		std::cerr << YELLOW << "Host field not present or wrong: " << _request.getHost() << RESET_PRINT << std::endl;
 		_readErrorPage( STATUS_400 );
@@ -473,6 +476,16 @@ ssize_t		Response::getMsgLength() const
 /*                  PROTOTYPING METHODS                       */
 /**************************************************************/
 
+/* _getCgiNeeded:
+*	Checks if CGI is needed for the request.
+*		
+*	Returns true if CGI is needed, false otherwise.
+*/
+bool	Response::_getCgiNeeded()
+{
+	//_request.getTypes();
+	return false;
+}
 
 // /* FOR CGI-TESTING */
 // void	ClientSocket::_buildResponseCGI( std::string path, RequestParser rp)

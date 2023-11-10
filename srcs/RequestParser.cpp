@@ -6,7 +6,7 @@
 /*   By: pdelanno <pdelanno@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/10/24 12:52:22 by pdelanno          #+#    #+#             */
-/*   Updated: 2023/11/07 11:48:14 by pdelanno         ###   ########.fr       */
+/*   Updated: 2023/11/08 09:28:13 by pdelanno         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,6 +20,7 @@
 RequestParser::RequestParser()
 {
     _method = NO_TYPE;
+    _type = NONE;
     _path = "";
     _query = "";
     _host = "";
@@ -31,6 +32,7 @@ RequestParser::RequestParser()
 RequestParser::RequestParser(std::string buffer, ssize_t contentLength)
 {
 	_method = NO_TYPE;
+    _type = NONE;
 	_path = "";
 	_query = "";
     _host = "";
@@ -79,6 +81,10 @@ std::string RequestParser::getHost() const
 {
     return(_host);
 }
+fileExtension RequestParser::getType() const
+{
+    return(_type);
+}
 
 
 /**************************************************************/
@@ -100,12 +106,13 @@ std::string RequestParser::removeCarriageReturn(std::string &str)
 
 void RequestParser::parseRequest(std::string const &buffer)
 {
-	//std::cout << "----------Buffer: " << std::endl << buffer << std::endl;
-	//splitBuffer()
-	std::stringstream linestream(buffer);
-	std::string method;
+    std::cout << "----------Buffer: " << std::endl << buffer << std::endl;
+    //splitBuffer()
+    std::stringstream linestream(buffer);
+    std::string method;
 	std::string lineSkip;		// fbecht changed here
     std::getline(linestream, method, ' ');
+	removeCarriageReturn(method);
     if (method == "GET")
         _method = GET;
     else if (method == "POST")
@@ -135,8 +142,26 @@ void RequestParser::parseRequest(std::string const &buffer)
         std::getline(sstream, _path, '?');
         std::getline(sstream, _query);
     }
+    if (_path.find(".") != std::string::npos)
+    {
+        char c1, c2;
+        std::string type;
+        std::istringstream sstream(_path);
+        size_t dotPos = _path.find(".");
+        sstream.seekg(dotPos + 1);
+        sstream >> c1 >> c2; type = c1; type += c2;
+        if (type == "cs")
+            _type = CSS;
+        else if (type == "ph")
+            _type = PHP;
+        else if (type == "py")
+            _type = PY;
+        else
+            _type = HTML;
+    }
     std::getline(linestream, _protocol, '\r');
 	std::getline(linestream, lineSkip);		// fbecht changed here
+	removeCarriageReturn(_protocol);
     std::string key;
     std::string value;
     while (linestream)
@@ -151,7 +176,8 @@ void RequestParser::parseRequest(std::string const &buffer)
         if (key.empty() || key[0] == '\r')
             break ;
         //removeCarriageReturn(key);
-        std::getline(linestream, value, '\r');
+        std::getline(linestream, value);
+		removeCarriageReturn(value);
 		std::getline(linestream, lineSkip);		// fbecht changed here
         if (value.empty())
             break ;
@@ -159,11 +185,11 @@ void RequestParser::parseRequest(std::string const &buffer)
         _headers[key] = value;
     }
     _host = _headers["Host"];
-    // std::cout << "---------------------------------All headers: " << std::endl;
-    // std::map<std::string, std::string>::iterator it;
-    // it = _headers.begin();
-    // for (it = _headers.begin(); it != _headers.end(); ++it)
-    //     std::cout << "\"" << it->first << "\" " << it->second << std::endl;
+    std::cout << "---------------------------------All headers: " << std::endl;
+    std::map<std::string, std::string>::iterator it;
+    it = _headers.begin();
+    for (it = _headers.begin(); it != _headers.end(); ++it)
+        std::cout << it->first << " " << it->second << std::endl;
 }
 
 void RequestParser::parseHeaders()
@@ -181,6 +207,7 @@ std::ostream &operator<<(std::ostream &str, RequestParser &rp)
     str << "Method: " << rp.getMethod() << std::endl;
     str << "Path: " << rp.getPath() << std::endl;
     str << "Query: " << rp.getQuery() << std::endl;
+    str << "Type: " << rp.getType() << std::endl;
     str << "Protocol: " << rp.getProtocol() << std::endl;
     str << "Host: " << rp.getHost() << std::endl;
     str << "Body: " << rp.getBody() <<std::endl;

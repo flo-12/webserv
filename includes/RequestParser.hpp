@@ -6,7 +6,7 @@
 /*   By: pdelanno <pdelanno@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/10/24 12:35:40 by pdelanno          #+#    #+#             */
-/*   Updated: 2023/11/07 11:47:51 by pdelanno         ###   ########.fr       */
+/*   Updated: 2023/11/08 07:20:05 by pdelanno         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,6 +32,7 @@ class RequestParser
             httpMethod  getMethod() const;
             std::string getPath() const;
             std::string getQuery() const;
+            fileExtension getType() const;
             std::string getProtocol() const;
             std::string getBody() const;
             std::string getHost() const;
@@ -44,6 +45,7 @@ class RequestParser
             httpMethod  _method;
             std::string _path;
             std::string _query;
+            fileExtension _type;
             std::string _protocol;
             std::map<std::string, std::string> _headers;
             std::string _host;

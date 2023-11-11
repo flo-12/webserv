@@ -106,7 +106,6 @@ std::string RequestParser::removeCarriageReturn(std::string &str)
 
 void RequestParser::parseRequest(std::string const &buffer)
 {
-    std::cout << "----------Buffer: " << std::endl << buffer << std::endl;
     //splitBuffer()
     std::stringstream linestream(buffer);
     std::string method;
@@ -185,11 +184,6 @@ void RequestParser::parseRequest(std::string const &buffer)
         _headers[key] = value;
     }
     _host = _headers["Host"];
-    std::cout << "---------------------------------All headers: " << std::endl;
-    std::map<std::string, std::string>::iterator it;
-    it = _headers.begin();
-    for (it = _headers.begin(); it != _headers.end(); ++it)
-        std::cout << it->first << " " << it->second << std::endl;
 }
 
 void RequestParser::parseHeaders()

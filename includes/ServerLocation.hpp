@@ -37,7 +37,7 @@ private:
     std::pair<HttpStatusCode, std::string>  _return;
     std::string                             _root;
     std::string                             _cgiPath;
-    bool                                    _isCgi;
+    // bool                                    _isCgi;
 
     // parsing
     void    _parseMethods(std::istringstream &lineStream);

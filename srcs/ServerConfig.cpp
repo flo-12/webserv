@@ -39,21 +39,21 @@ std::string ServerConfig::retrievePathErrorPage(const HttpStatusCode errorStatus
 *   requestUri with the information specified in the location. The requestUri
 *   will not contain the part of the locationKey anymore
 *   Scenarios:
-*   1. requestUri specifies a file 
+    1. Location is a CGI, do not append any root folder and return
+*   2. requestUri specifies a file 
         => append this file
-*   2. requestUri does not specify a file
+*   3. requestUri does not specify a file
         => use file specfied in "index" of location
         => if not specified use "index" of general ServerConfig
-*   3. Location specifies a "root"
+*   4. Location specifies a "root"
         => use path in "root" as prefix to filename/path
-*   4. Location does not specifiy a "root"
+*   5. Location does not specifiy a "root"
         => use "root" member from ther ServerConfig
 *   When the location specifies an autoindex, a '/' is appended at the end
 *   instead of a file
 */
 std::string ServerConfig::getUri(std::string locationKey, std::string requestUri)
 {
-    // bool    hasFilename = true;
     std::string fileName;
     std::string root;
     std::string pathSuffix;
@@ -112,7 +112,7 @@ std::string ServerConfig::getLocationKey(std::string requestUri)
             it != _serverLocations.end(); ++it)
         {
             if (it->first == fileExt)
-                return (it->first);
+                return (requestUri);
         }
     }
 
@@ -132,6 +132,8 @@ std::string ServerConfig::getLocationKey(std::string requestUri)
     }
     return ("/");
 }
+
+// bool    ServerConfig::validate(void) const
 
 /*----------------------------- PRIVATE METHODS -----------------------------*/
 

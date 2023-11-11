@@ -92,14 +92,17 @@ std::string ServerLocation::getCgiPath(void) const
 
 bool    ServerLocation::getIsCgi(void) const
 {
-    return (_isCgi);
+    if (_cgiPath.empty())
+        return (false);
+    else
+        return (true);
 }
 
 /*------------------- CONSTRUCTOR, ASSIGNEMENT, DESTRUCTOR ------------------*/
 
 ServerLocation::ServerLocation()
     :   _index(""), _methods(), _autoindex(false), _root(""),
-        _cgiPath(""), _isCgi(0)
+        _cgiPath("") //, _isCgi(0)
 {
 }
 
@@ -153,8 +156,7 @@ ServerLocation::ServerLocation(std::stringstream &locationBlock)
         else if (key == "is_cgi")
         {
             lineStream >> value;
-            std::cout << value;
-            _autoindex = (value == "true");
+            _autoindex = (value == "false");
         }
         else
             throw (std::runtime_error("Error, unknown keyword: " + key));
@@ -163,8 +165,7 @@ ServerLocation::ServerLocation(std::stringstream &locationBlock)
 
 ServerLocation::ServerLocation(const ServerLocation& copy)
     :   _index(copy._index), _methods(copy._methods), _autoindex(copy._autoindex),
-        _return(copy._return), _root(copy._root), _cgiPath(copy._cgiPath), 
-        _isCgi(copy._isCgi)
+        _return(copy._return), _root(copy._root), _cgiPath(copy._cgiPath) //, isCgi(copy._isCgi)
 {
 }
 
@@ -178,7 +179,7 @@ ServerLocation& ServerLocation::operator=(const ServerLocation& other)
         _return = other._return;
         _root = other._root;
         _cgiPath = other._cgiPath;
-        _isCgi = other._isCgi;
+        //_isCgi = other._isCgi;
     }
     return (*this);
 }
@@ -205,10 +206,13 @@ std::ostream& operator<<(std::ostream& os, const ServerLocation& serverLocation)
         os << "Return:          " << returnCopy.first << " " << returnCopy.second << "\n";
     if (!serverLocation.getRoot().empty())
         os << "Root:            " << serverLocation.getRoot() << "\n";
+    
+    // figure out this one later, it's tooooo frustrating
     // if (serverLocation.getIsCgi() == true)
     // {
-    os << "Is CGI:          " << serverLocation.getIsCgi() << "\n";
-        // os << "CGI path:        " << serverLocation.getCgiPath() << "\n";
+    // os << "Is CGI:          " << (serverLocation.getIsCgi() ? "TRUE" : "FALSE") << "\n";
     // }
+    if (!serverLocation.getCgiPath().empty())
+        os << "CGI path:        " << serverLocation.getCgiPath() << "\n";
     return os;
 }

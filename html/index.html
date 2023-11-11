@@ -1,92 +1,106 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>webserv index</title>
-	<!-- <link rel="stylesheet" href="styles.css"> -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Website</title>
+    <link rel="stylesheet" href="styles.css">
+	<link rel="icon" href="favicon.png" type="image/x-icon">
 </head>
 <body>
-	<div class="container">
-		<h1>Welcome to webserv</h1>
-		<p>Welcome Bro, this is the official web server.</p>
-		<image src="surfer.jpeg"/>
-		<p></p>
-		<audio controls>
-			<source src="giga-chad-theme.mp3" type="audio/mpeg">
-		</audio>
-	</div>
+    <header>
+        <div class="header-container">
+            <img src="surfer.jpg" alt="Header Image">
+            <h1>Welcome to webserv!</h1>
+        </div>
+    </header>
+    <div class="content-container">
+        <p>Welcome to our completion of the 42 module 'webserv'. <br>
+			It's goal was to code a simple webserver that can handle requests and build responses
+			in the HTTP 1.1 standard. Entirely in C++!<br>
+			The following sections illustrate functionalities of our webserver:
+		</p>
+    </div>
+	<main>
+        <div class="box" onclick="location.href='file_manager.html';">
+            <p>Upload, download & delete files</p>
+        </div>
+        <div class="box" onclick="location.href='autoindex/';">
+            <p>Autoindex</p>
+        </div>
+        <div class="box" onclick="location.href='red/';">
+            <p>Redirection</p>
+        </div>
+        <div class="box" onclick="location.href='https://example.com/page4';">
+            <p>CGI: PHP<br> RPN Calculator</p>
+        </div>
+    </main>
 
-	<h1>POST Request Example</h1>
-	<form action="/submit" method="post">
-		<label for="name">Name:</label>
-		<input type="text" id="name" name="name" required>
-		<br>
-		<button type="submit">Submit</button>
-	</form>
+	<main>
+        <div class="box" onclick="location.href='simple_post.html';">
+            <p> POST request</p>
+        </div>
+		<div class="box" onclick="location.href='https://example.com/page4';">
+            <p> CGI: Python <br> ?</p>
+        </div>
+    </main>
 
-	<h1>POST File Upload</h1>
-	<form action="/submit" method="post" enctype="multipart/form-data">
-		<label for="name">Name:</label>
-		<input type="text" id="name" name="name" required>
-		<br>
-		<label for="file">File:</label>
-		<input type="file" id="file" name="file">
-		<br>
-		<button type="submit">Submit</button>
-	</form>
-	
-	<h1>DELETE request</h1>
-	<button onclick="sendDeleteRequest()">Delete Resource</button>
+	<div id="cookie-popup">
+        This website uses cookies to ensure you get the best experience on our website.
+        <button id="accept-btn">Accept</button>
+    </div>
 
-	<script>
-	function sendDeleteRequest() {
-		fetch('/uploads/test', {
-			method: 'DELETE',
-			headers: {
-				'Content-Type': 'application/json', // Adjust content type as needed
-				// Include any other headers as needed
-			},
-			// Include request body if needed (e.g., for sending JSON data)
-			// body: JSON.stringify({ key: 'value' }),
-		})
-		.then(response => {
-			if (!response.ok) {
-				throw new Error('Network response was not ok');
-			}
-			console.log('DELETE request successful');
-		})
-		.catch(error => {
-			console.error('Error making DELETE request:', error);
-		});
-	}
+    <!-- Your Page Content Goes Here -->
 
-	</script>
-	<h1>POST CGI request</h1>
-		<button onclick="sendDeleteRequest()">Delete Resource</button>
+    <script>
+        // Function to set a cookie
+        function setCookie(name, value, days) {
+            const date = new Date();
+            date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+            const expires = "expires=" + date.toUTCString();
+            document.cookie = name + "=" + value + ";" + expires + ";path=/";
+        }
 
-			<script>
-			function sendDeleteRequest() {
-				fetch('/RPN.php', {
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json', // Adjust content type as needed
-						// Include any other headers as needed
-					},
-					// Include request body if needed (e.g., for sending JSON data)
-					// body: JSON.stringify({ key: 'value' }),
-				})
-				.then(response => {
-					if (!response.ok) {
-						throw new Error('Network response was not ok');
-					}
-					console.log('DELETE request successful');
-				})
-				.catch(error => {
-					console.error('Error making DELETE request:', error);
-				});
-			}
+        // Function to check if the cookie has been accepted
+        function checkCookie() {
+            const accepted = getCookie("cookiesAccepted");
+            if (!accepted) {
+                // Show the cookie popup
+                document.getElementById("cookie-popup").style.display = "block";
+            }
+        }
 
-		</script>
+        // Function to get a cookie value
+        function getCookie(name) {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.startsWith(name + "=")) {
+                    return cookie.substring(name.length + 1);
+                }
+            }
+            return "";
+        }
+
+        // Function to handle the "Accept" button click
+        function acceptCookies() {
+            // Set the "cookiesAccepted" cookie
+            setCookie("cookiesAccepted", "true", 365);
+            // Hide the cookie popup
+            document.getElementById("cookie-popup").style.display = "none";
+        }
+
+        // Check if the cookies have been accepted on page load
+        window.onload = checkCookie;
+
+        // Add click event listener to the "Accept" button
+        document.getElementById("accept-btn").addEventListener("click", acceptCookies);
+    </script>
+
+	<footer>
+        <p>Authors: <a href="https://github.com/flo-12">Florian</a>, 
+					<a href="https://github.com/dubmix">Pierre</a> & 
+					<a href="https://github.com/Linuswidmer">Linus</a></p>
+    </footer>
 </body>
 </html>

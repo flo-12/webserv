@@ -13,6 +13,8 @@
 
 class ServerConfig {
 public:
+    // validate config
+    bool    validate(void) const;
 
     // public methods - for building Response 
     std::string                             getLocationKey(std::string requestUri);
@@ -50,9 +52,6 @@ private:
     void            _parseErrorPages(std::istringstream &lineStream);
     void            _parseServerConfig(std::stringstream &serverBlock);
     unsigned int    _ipStringToInt(const std::string ipAddress);
-
-    // validate config
-    // bool    validate;
 
     std::vector<int>                        _ports;
     std::string                             _host;

@@ -1,0 +1,81 @@
+body {
+    margin: 0;
+}
+
+header {
+    background-color: #333;
+    color: white;
+    padding: 20px;
+}
+
+.header-container {
+    display: flex;
+    align-items: center;
+}
+
+header img {
+    width: 300px;
+    margin-right: 10px;
+}
+
+main {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    margin-top: 30px; /* Adjust the margin-top to your preference */
+}
+
+.box {
+    width: 150px;
+    height: 100px;
+    background-color: white;
+    border: 1px solid black;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    margin: 2%; 
+    border-radius: 10px;
+    transition: transform 0.3s ease; /* Add a smooth transition effect */
+
+    /* Add hover effect */
+    &:hover {
+        transform: translateY(-5px); /* Adjust the translateY value for the hover effect */
+    }
+}
+
+.box p {
+    margin: 0;
+}
+
+footer {
+    background-color: #333; /* Dark background color for the footer */
+    color: white; /* Text color for the footer */
+    text-align: center;
+    padding: 10px;
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+}
+
+/* Links in text */
+p a {
+    color: white;
+    text-decoration: none; /* Remove underline from links */
+    font-weight: bold; /* Make the text bold */
+}
+
+p a:hover {
+    text-decoration: underline; /* Add underline on hover */
+}
+
+.content-container {
+    background: #f4f4f4; /* Subtle background color for content container */
+    margin: auto; /* Margin for centering */
+    padding: 20px;
+    max-width: 800px; /* Set a maximum width for content container */
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* Subtle box shadow */
+}
+
+

@@ -145,7 +145,7 @@ bool	Response::_checkPreconditions()
 
 	// check if Host field is present
 	std::cout << "Host: " << _request.getHost() << std::endl;
-	if ( _request.getHost() != _config.getHost() + ":" + _config.getPort() ) {
+	if ( _request.getHost() != _config.getHost() + ":" + _config.getPort()) {
 		std::cerr << YELLOW << "Host field not present or wrong: " << _request.getHost() << RESET_PRINT << std::endl;
 		_readErrorPage( STATUS_400 );
 		return false;

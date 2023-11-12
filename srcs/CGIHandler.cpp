@@ -6,7 +6,7 @@
 /*   By: pdelanno <pdelanno@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/10/31 14:31:46 by pdelanno          #+#    #+#             */
-/*   Updated: 2023/11/10 11:27:14 by pdelanno         ###   ########.fr       */
+/*   Updated: 2023/11/12 09:05:32 by pdelanno         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -98,7 +98,7 @@ std::string CGIHandler::execute(RequestParser rp)
         std::strcpy(env[i], _env[i].c_str());
     }
     env[_env.size()] = NULL;
-    std::cout << _env[1] << std::endl;
+    //std::cout << _env[1] << std::endl;
     std::string output;
     int pid = fork();
     if (pid == 0)

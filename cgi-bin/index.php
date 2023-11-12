@@ -17,17 +17,11 @@
             <input name="number" required>
             <button type="submit">Calculate</button>
         </form>
-    
-        <?php
-            $input = file_get_contents('php://stdin');
-            #echo "Request: " . htmlspecialchars($input);
-            $output = shell_exec("/home/pdelanno/webserv-group/cgi-bin/RPN $input");
-        ?>
 
     <div style="border: 1px solid #000; border-radius: 3px; 
     border-style: dashed; padding: 10px; margin-top: 20px;
     width: 358px; white-space: pre-wrap; font-family: inherit;">
-        Result: <?php echo htmlspecialchars($output); ?>
+        
     </div>
 
     </div>

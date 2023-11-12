@@ -6,7 +6,7 @@
 /*   By: pdelanno <pdelanno@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/10/24 12:52:22 by pdelanno          #+#    #+#             */
-/*   Updated: 2023/11/08 09:28:13 by pdelanno         ###   ########.fr       */
+/*   Updated: 2023/11/12 08:54:23 by pdelanno         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -109,7 +109,6 @@ void RequestParser::parseRequest(std::string const &buffer)
     //splitBuffer()
     std::stringstream linestream(buffer);
     std::string method;
-	std::string lineSkip;		// fbecht changed here
     std::getline(linestream, method, ' ');
 	removeCarriageReturn(method);
     if (method == "GET")
@@ -158,8 +157,7 @@ void RequestParser::parseRequest(std::string const &buffer)
         else
             _type = HTML;
     }
-    std::getline(linestream, _protocol, '\r');
-	std::getline(linestream, lineSkip);		// fbecht changed here
+    std::getline(linestream, _protocol, '\n');
 	removeCarriageReturn(_protocol);
     std::string key;
     std::string value;
@@ -174,16 +172,19 @@ void RequestParser::parseRequest(std::string const &buffer)
         }
         if (key.empty() || key[0] == '\r')
             break ;
-        //removeCarriageReturn(key);
         std::getline(linestream, value);
 		removeCarriageReturn(value);
-		std::getline(linestream, lineSkip);		// fbecht changed here
         if (value.empty())
             break ;
         value = value.erase(0, 1);
         _headers[key] = value;
     }
     _host = _headers["Host"];
+    std::stringstream sstream(_host);
+    std::string localhost;
+    std::getline(sstream, localhost, ':');
+    if (localhost == "localhost")
+        _host = "127.0.0.1:18000";
 }
 
 void RequestParser::parseHeaders()

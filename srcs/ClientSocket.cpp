@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ClientSocket.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fbecht <fbecht@student.42berlin.de>        +#+  +:+       +#+        */
+/*   By: pdelanno <pdelanno@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/10/31 11:13:14 by fbecht            #+#    #+#             */
-/*   Updated: 2023/10/31 11:13:16 by fbecht           ###   ########.fr       */
+/*   Updated: 2023/11/12 08:39:15 by pdelanno         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -204,6 +204,14 @@ ResponseStatus	ClientSocket::sendResponse()
 		_response.startTime = time(0);
 
 		RequestParser	requestParser( _request.buffer, _request.contentLength );
+		std::cout << requestParser << std::endl;
+
+		// for printing ascii values
+		
+		// for (size_t i = 0; i < requestParser.getHost().length(); ++i)
+		// {
+		// 	std::cout << "Char at pos " << i << ": " << static_cast<int>(requestParser.getHost()[i]) << std::endl;
+		// }
 
 		try
 		{

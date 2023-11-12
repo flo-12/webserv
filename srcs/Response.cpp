@@ -102,6 +102,7 @@ bool	Response::_checkPreconditions()
 	// check if path/file exists
 	// differentiate for DELETE and GET <--- TODO
 	if ( access(_paths.responseUri.c_str(), F_OK) != 0 ) {
+		std::cout << "test2" << std::endl;
 		std::cerr << YELLOW << "File not found: " << _paths.responseUri << RESET_PRINT << std::endl;
 		_readErrorPage( STATUS_404 );
 		return false;
@@ -199,10 +200,16 @@ void	Response::_handleGet()
 	}
 	else if ( _isCgiNeeded() ) {
 		// call CGI
-		CGIHandler	CGIHandler( _request );
-		_msgBody = CGIHandler.execute( _request );	// change: execute is called by default constructor and CGIHandler has a getBody method
-		_msgBodyLength = _msgBody.length();	// change: CGIHandler.getBodyLength()
-		_setMsgStatusLine( STATUS_200 );	// check for errors!!!!
+		try {
+			CGIHandler	CGIHandler( _request );
+			_msgBody = CGIHandler.getBody();	// change: execute is called by default constructor and CGIHandler has a getBody method
+			_msgBodyLength = CGIHandler.getBodyLength();	// change: CGIHandler.getBodyLength()
+			_setMsgStatusLine( STATUS_200 );	// check for errors!!!!
+		}
+		catch (std::exception &e) {
+			std::cerr << e.what() << std::endl;
+			//_setMsgStatusLine( STATUS_400 );
+		}
 	}
 	else
 	{
@@ -237,8 +244,8 @@ void	Response::_handlePost()
 	if ( _isCgiNeeded() ) {
 		// call CGI
 		CGIHandler	CGIHandler( _request );
-		_msgBody = CGIHandler.execute( _request );	// change: execute is called by default constructor and CGIHandler has a getBody method
-		_msgBodyLength = _msgBody.length();	// change: CGIHandler.getBodyLength()
+		_msgBody = CGIHandler.getBody();	// change: execute is called by default constructor and CGIHandler has a getBody method
+		_msgBodyLength = CGIHandler.getBodyLength();	// change: CGIHandler.getBodyLength()
 		_setMsgStatusLine( STATUS_200 );	// check for errors!!!!
 		_msgHeader["Content-Length"] = to_string(_msgBodyLength);
 	}

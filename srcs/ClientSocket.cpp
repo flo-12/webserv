@@ -6,7 +6,7 @@
 /*   By: pdelanno <pdelanno@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/10/31 11:13:14 by fbecht            #+#    #+#             */
-/*   Updated: 2023/11/12 08:39:15 by pdelanno         ###   ########.fr       */
+/*   Updated: 2023/11/12 16:24:28 by pdelanno         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -204,7 +204,7 @@ ResponseStatus	ClientSocket::sendResponse()
 		_response.startTime = time(0);
 
 		RequestParser	requestParser( _request.buffer, _request.contentLength );
-		std::cout << requestParser << std::endl;
+		//std::cout << requestParser << std::endl;
 
 		// for printing ascii values
 		

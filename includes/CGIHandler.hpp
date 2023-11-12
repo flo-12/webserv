@@ -6,7 +6,7 @@
 /*   By: pdelanno <pdelanno@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/10/31 14:31:36 by pdelanno          #+#    #+#             */
-/*   Updated: 2023/11/08 09:24:54 by pdelanno         ###   ########.fr       */
+/*   Updated: 2023/11/12 15:53:35 by pdelanno         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,6 +27,7 @@
 # include <sstream>
 # include <string>
 # include <common.hpp>
+# include <ctime>
 
 class CGIHandler
 {
@@ -34,16 +35,20 @@ class CGIHandler
             CGIHandler();
             CGIHandler(RequestParser rp);
             ~CGIHandler();
-            std::string execute(RequestParser rp);
 
+            std::string getBody();
+            ssize_t getBodyLength();
+            
     private:
+            std::string _execute(RequestParser rp);
             std::string _path;
             std::vector<std::string> _args;
             std::vector<std::string> _env;
+            std::string _body;
+            ssize_t     _bodyLength;
+            void        _deleteArgsEnv(char **args, char **env);
 
             std::string bodyParser(std::string requestBody);
-            //char        **_args;
-            //char        **_env;
 };
 
 #endif

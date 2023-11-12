@@ -6,27 +6,21 @@
 /*   By: pdelanno <pdelanno@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/10/31 14:31:46 by pdelanno          #+#    #+#             */
-/*   Updated: 2023/11/12 09:05:32 by pdelanno         ###   ########.fr       */
+/*   Updated: 2023/11/12 16:21:59 by pdelanno         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "CGIHandler.hpp"
 
-CGIHandler::CGIHandler()
-{
-    std::cout << std::endl << "----------////#####" << std::endl;
-    _env.push_back("CONTENT_LENGTH=9");
-    _env.push_back("REQUEST_METHOD=POST");
-    _env.push_back("CONTENT_TYPE=application/x-www-form-urlencoded");
-    _env.push_back("SCRIPT_FILENAME=/home/pdelanno/webserv-group/cgi-bin/RPN.php");
-}
+CGIHandler::CGIHandler() {}
 
 //handle timeout for CGI, in case of endless loop
 
 CGIHandler::CGIHandler(RequestParser rp): _path("") 
 {
-    rp.getBody();
-    std::cout << std::endl << "----------////#####" << std::endl;
+    //std::cout << std::endl << "----------////#####" << std::endl;
+    // const int timeout = 5;
+    // clock_t start = clock();
     
     _env.push_back("CONTENT_LENGTH=" + rp.getHeaders()["Content-Length"]);
     std::string type;
@@ -39,10 +33,31 @@ CGIHandler::CGIHandler(RequestParser rp): _path("")
     _env.push_back("REQUEST_METHOD=" + type);
     _env.push_back("CONTENT_TYPE=" + rp.getHeaders()["Content-Type"]);
     _env.push_back("SCRIPT_FILENAME=" + rp.getPath());
-    //std::cout << _env[3] << std::endl;
+    _body = _execute(rp);
+    // while (true)
+    // {
+    //     clock_t current = clock();
+    //     int elapsedSeconds = static_cast<double>(current - start) / CLOCKS_PER_SEC;
+        
+    //     if (elapsedSeconds >= timeout)
+    //     {
+    //         std::cout << "Timeout" << std::endl;
+    //         break ;
+    //     }
+    // }
 }
 
 CGIHandler::~CGIHandler() {}
+
+std::string CGIHandler::getBody()
+{
+    return(_body);
+}
+
+ssize_t CGIHandler::getBodyLength()
+{
+    return(_bodyLength);
+}
 
 std::string CGIHandler::bodyParser(std::string requestBody)
 {
@@ -71,7 +86,15 @@ std::string CGIHandler::bodyParser(std::string requestBody)
     return(body);
 }
 
-std::string CGIHandler::execute(RequestParser rp)
+void CGIHandler::_deleteArgsEnv(char **args, char **env)
+{
+    for (unsigned long i = 0; i < _args.size(); ++i)
+        delete[] args[i];
+    for (unsigned long i = 0; i < _env.size(); ++i)
+        delete[] env[i];
+}
+
+std::string CGIHandler::_execute(RequestParser rp)
 {
     const char *executable = "/usr/bin/php";
     if (rp.getType() != PHP)
@@ -80,10 +103,14 @@ std::string CGIHandler::execute(RequestParser rp)
     }
     _args.push_back("/usr/bin/php");
     _args.push_back("./cgi-bin" + rp.getPath());
+    
     int pipeServerToCGI[2];
     int pipeCGIToServer[2];
-    pipe(pipeServerToCGI);
-    pipe(pipeCGIToServer);
+    if (pipe(pipeServerToCGI) == -1)
+        throw std::runtime_error("Error: pipe server-to-CGI failed");
+    if (pipe(pipeCGIToServer) == -1)
+        throw std::runtime_error("Error: pipe CGI-to-server failed");
+    
     char **args = new char*[_args.size() + 1];
     for (unsigned long i = 0; i < _args.size(); ++i)
     {
@@ -98,17 +125,28 @@ std::string CGIHandler::execute(RequestParser rp)
         std::strcpy(env[i], _env[i].c_str());
     }
     env[_env.size()] = NULL;
-    //std::cout << _env[1] << std::endl;
+    
     std::string output;
     int pid = fork();
     if (pid == 0)
     {
         close(pipeServerToCGI[1]);
         close(pipeCGIToServer[0]);
-        dup2(pipeServerToCGI[0], STDIN_FILENO);
-        dup2(pipeCGIToServer[1], STDOUT_FILENO);
-        execve(executable, args, env);
-        perror("execve");
+        if (dup2(pipeServerToCGI[0], STDIN_FILENO) == -1)
+        {
+            _deleteArgsEnv(args, env);
+            throw std::runtime_error("Error: dup2 server-to-CGI in child process failed");
+        }
+        if (dup2(pipeCGIToServer[1], STDOUT_FILENO) == -1)
+        {
+            _deleteArgsEnv(args, env);
+            throw std::runtime_error("Error: dup2 CGI-to-server in child process failed");
+        }
+        if (execve(executable, args, env) == -1)
+        {
+            _deleteArgsEnv(args, env);
+            throw std::runtime_error("Error: execve failed");
+        }
         exit(0);
     }
     else if (pid > 0)
@@ -118,19 +156,23 @@ std::string CGIHandler::execute(RequestParser rp)
         std::string body = bodyParser(rp.getBody());
         write(pipeServerToCGI[1], body.c_str(), body.length());
         close(pipeServerToCGI[1]);
+        
         const int BUFSIZE = 4096;
         char buffer[BUFSIZE];
         int bytesRead = 1;
         while (bytesRead > 0) 
         {
             bytesRead = read(pipeCGIToServer[0], buffer, BUFSIZE);
-            //std::cout << buffer << std::endl;
             output.append(buffer, bytesRead);
         }
         waitpid(pid, NULL, 0);
-        //std::cout << output << std::endl;
     }
     else
+    {
+        _deleteArgsEnv(args, env);
         throw std::runtime_error("Error: CGI fork failed");
+    }
+    _bodyLength = output.length();
+    _deleteArgsEnv(args, env);
     return (output);
 }

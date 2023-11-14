@@ -6,7 +6,7 @@
 /*   By: pdelanno <pdelanno@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/10/31 11:13:14 by fbecht            #+#    #+#             */
-/*   Updated: 2023/11/12 16:24:28 by pdelanno         ###   ########.fr       */
+/*   Updated: 2023/11/14 09:25:45 by pdelanno         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -176,9 +176,9 @@ ReceiveStatus	ClientSocket::receiveRequest()
 	// Check if request is complete and set Content-Length
 	if ( _requestComplete() )
 	{
-		/* std::cout << "+++++++++++++++++ Request +++++++++++++++++" << std::endl;
+		std::cout << "+++++++++++++++++ Request +++++++++++++++++" << std::endl;
 		std::cout << _request.buffer << std::endl;
-		std::cout << "+++++++++++++++++++++++++++++++++++++++++++" << std::endl; */
+		std::cout << "+++++++++++++++++++++++++++++++++++++++++++" << std::endl;
 		//_saveFile( "./html/surfer_POST.jpeg", _request.buffer );
 
 		_request.pendingReceive = false;

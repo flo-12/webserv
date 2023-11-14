@@ -6,7 +6,7 @@
 /*   By: pdelanno <pdelanno@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/10/31 14:31:46 by pdelanno          #+#    #+#             */
-/*   Updated: 2023/11/12 16:21:59 by pdelanno         ###   ########.fr       */
+/*   Updated: 2023/11/14 07:50:25 by pdelanno         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,7 +32,7 @@ CGIHandler::CGIHandler(RequestParser rp): _path("")
         type = "DELETE";
     _env.push_back("REQUEST_METHOD=" + type);
     _env.push_back("CONTENT_TYPE=" + rp.getHeaders()["Content-Type"]);
-    _env.push_back("SCRIPT_FILENAME=" + rp.getPath());
+    _env.push_back("SCRIPT_FILENAME=" + rp.getPath());;
     _body = _execute(rp);
     // while (true)
     // {
@@ -44,7 +44,7 @@ CGIHandler::CGIHandler(RequestParser rp): _path("")
     //         std::cout << "Timeout" << std::endl;
     //         break ;
     //     }
-    // }
+    // } //when execve can't find the executable
 }
 
 CGIHandler::~CGIHandler() {}
@@ -101,7 +101,7 @@ std::string CGIHandler::_execute(RequestParser rp)
     {
         executable = "/usr/bin/python3";
     }
-    _args.push_back("/usr/bin/php");
+    _args.push_back(executable);
     _args.push_back("./cgi-bin" + rp.getPath());
     
     int pipeServerToCGI[2];
@@ -125,6 +125,9 @@ std::string CGIHandler::_execute(RequestParser rp)
         std::strcpy(env[i], _env[i].c_str());
     }
     env[_env.size()] = NULL;
+    
+    // if (access(args[1], F_OK) == 0)
+    //     std::cout << "file detected" << std::endl;
     
     std::string output;
     int pid = fork();
@@ -174,5 +177,6 @@ std::string CGIHandler::_execute(RequestParser rp)
     }
     _bodyLength = output.length();
     _deleteArgsEnv(args, env);
+    std::cout << "output is: " << output << std::endl;
     return (output);
 }

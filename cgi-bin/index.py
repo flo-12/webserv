@@ -1,26 +1,14 @@
 #!/usr/bin/python3
+from jinja2 import Environment, FileSystemLoader
+import subprocess
 
+"""
 def my_var():
-	var = 42
-	print(var, "has a type", type(var))
-	var = "42"
-	print(var, "has a type", type(var))
-	var = "forty-two"
-	print(var, "has a type", type(var))
-	var = 42.0
-	print(var, "has a type", type(var))
-	var = True
-	print(var, "has a type", type(var))
-	var = [42]
-	print(var, "has a type", type(var))
-	var.append(43)
-	print(var, "has a type", type(var))
-	var = {42: 42}
-	print(var, "has a type", type(var))
-	var = (42, 67)
-	print(var, "has a type", type(var))
-	var = {1, 3, 42}
-	print(var, "has a type", type(var))
+	return("eureka")
+"""
 
 if __name__ == '__main__':
-	my_var()
+	env = Environment(loader=FileSystemLoader('./cgi-bin'))
+	template = env.get_template('index_template.html')
+	rendered_template = template.render()
+	print(rendered_template)

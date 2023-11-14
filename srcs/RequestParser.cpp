@@ -6,7 +6,7 @@
 /*   By: pdelanno <pdelanno@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/10/24 12:52:22 by pdelanno          #+#    #+#             */
-/*   Updated: 2023/11/12 08:54:23 by pdelanno         ###   ########.fr       */
+/*   Updated: 2023/11/14 18:40:26 by pdelanno         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,6 +27,9 @@ RequestParser::RequestParser()
     _contentLength = 0;
     _body = "";
     _bodyLength = 0;
+    _contentType = "";
+    _isUpload = false;
+    _boundaryCode = "";
 }
 
 RequestParser::RequestParser(std::string buffer, ssize_t contentLength)
@@ -39,6 +42,9 @@ RequestParser::RequestParser(std::string buffer, ssize_t contentLength)
     _contentLength = contentLength;
 	_body = "";
     _bodyLength = 0;
+    _contentType = "";
+    _isUpload = false;
+    _boundaryCode = "";
 	parseRequest(buffer);
 }
 
@@ -84,6 +90,10 @@ std::string RequestParser::getHost() const
 fileExtension RequestParser::getType() const
 {
     return(_type);
+}
+RequestParser::formObject RequestParser::getFormObject() const
+{
+    return(_form);
 }
 
 
@@ -167,29 +177,85 @@ void RequestParser::parseRequest(std::string const &buffer)
         if (key[0] == '\r' && (_method == POST || _method == DELETE))
         {
             key.erase(0, 2);
-            _body = key;
+            if (_isUpload == false)
+                _body = key;
+            else
+            {
+                // retrieve boundary code from content-type!
+                std::stringstream sboundary(key);
+                std::getline(sboundary, _boundaryCode, '\n');
+                //_boundaryCode.erase(0, 1);
+                std::string formBuffer;
+
+                std::getline(linestream, formBuffer, '\r');
+                
+                std::stringstream sbuffer(formBuffer);
+                std::getline(sbuffer, key, '=');
+                std::getline(sbuffer, _form.name, ';');
+                _form.name.erase(0, 1);
+                _form.name.erase(_form.name.length() - 1, _form.name.length());
+                std::getline(sbuffer, key, '=');
+                std::getline(sbuffer, _form.fileName, ';');
+                _form.fileName.erase(0, 1);
+                _form.fileName.erase(_form.fileName.length() - 1, _form.fileName.length());
+                std::cout << YELLOW << _form.name << RESET_PRINT << std::endl;
+                std::getline(linestream, formBuffer, '\n');
+                std::getline(linestream, formBuffer, '\n');
+                std::getline(linestream, formBuffer, '\n');
+                std::getline(linestream, _form.formBody, '\r');
+                std::getline(linestream, formBuffer, '\r');
+                std::getline(linestream, _body, '\r');
+                _body.erase(0, 1);
+            }
             break ;
         }
         if (key.empty() || key[0] == '\r')
+        {
             break ;
+        }
         std::getline(linestream, value);
 		removeCarriageReturn(value);
         if (value.empty())
             break ;
         value = value.erase(0, 1);
+        if (key == "Content-Type" && value.find("multipart/form-data") != std::string::npos)
+            _isUpload = true;
         _headers[key] = value;
     }
+    
     _host = _headers["Host"];
     std::stringstream sstream(_host);
     std::string localhost;
     std::getline(sstream, localhost, ':');
     if (localhost == "localhost")
         _host = "127.0.0.1:18000";
+    
+    // _contentType = _headers["Content-Type"];
+    // sstream.str(_contentType);
+    // std::string contentType;
+    // std::getline(sstream, contentType, ';');
+    // if (contentType == "multipart/form-data")
+    // {
+    //     std::string boundary;
+    //     std::getline(sstream, boundary, '\n');
+    //     boundary.erase(0, 1);
+    //     _handleBoundaries(boundary);
+    // }
+    // else
+    //     std::cout << "popola" << std::endl;
+    
+    // std::cout << "---------------------------------All headers: " << std::endl;
+    // std::map<std::string, std::string>::iterator it;
+    // it = _headers.begin();
+    // for (it = _headers.begin(); it != _headers.end(); ++it)
+    //     std::cout << it->first << " " << it->second << std::endl;
+    // std::cout << "----------xxxx---------";
 }
 
-void RequestParser::parseHeaders()
+void RequestParser::_handleBoundaries(std::string boundary)
 {
-    
+    std::cout << boundary << std::endl;
+    std::cout << "body is: " << _body << std::endl;
 }
 
 

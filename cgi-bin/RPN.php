@@ -21,7 +21,7 @@
         <?php
             $input = file_get_contents('php://stdin');
             #echo "Request: " . htmlspecialchars($input);
-            $output = shell_exec("/home/pdelanno/webserv-group/cgi-bin/RPN $input");
+            $output = shell_exec("./cgi-bin/RPN $input");
         ?>
 
     <div style="border: 1px solid #000; border-radius: 3px; 

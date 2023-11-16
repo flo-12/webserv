@@ -6,7 +6,7 @@
 /*   By: pdelanno <pdelanno@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/10/24 12:35:40 by pdelanno          #+#    #+#             */
-/*   Updated: 2023/11/16 12:54:54 by pdelanno         ###   ########.fr       */
+/*   Updated: 2023/11/16 14:02:38 by pdelanno         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -48,6 +48,7 @@ class RequestParser
                         ~formObject() {};
                         std::string name;
                         std::string fileName;
+                        std::string contentType;
                         std::string body;
                         ssize_t bodyLength;
             };

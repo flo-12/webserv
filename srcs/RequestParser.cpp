@@ -6,7 +6,7 @@
 /*   By: pdelanno <pdelanno@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/10/24 12:52:22 by pdelanno          #+#    #+#             */
-/*   Updated: 2023/11/16 12:54:43 by pdelanno         ###   ########.fr       */
+/*   Updated: 2023/11/16 14:50:32 by pdelanno         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -116,14 +116,13 @@ std::string RequestParser::removeCarriageReturn(std::string &str)
 
 ssize_t &RequestParser::_getFormBodyLength(ssize_t &bodyLength)
 {
-    std::cout << YELLOW << bodyLength << RESET_PRINT << std::endl;
     ssize_t contentLength = std::atol(_headers["Content-Length"].c_str());
-    _boundaryCode.size();
-    std::cout << contentLength << std::endl;
-    //###########
+    bodyLength = contentLength - (((_boundaryCode.size() + 2) * 2) + 2);
+    bodyLength = bodyLength - (52 + _form.name.size() + _form.fileName.size()); //52 characters in the content-disposition header
+    bodyLength = bodyLength - (14 + _form.contentType.size()); //14 characters for content-type
+    bodyLength = bodyLength - 12; //trailing /n & /r
     return (bodyLength);
 }
-
 void RequestParser::parseRequest(std::string const &buffer)
 {
     //splitBuffer()
@@ -168,14 +167,12 @@ void RequestParser::parseRequest(std::string const &buffer)
         size_t dotPos = _path.find(".");
         sstream.seekg(dotPos + 1);
         sstream >> c1 >> c2; type = c1; type += c2;
-        if (type == "cs")
-            _type = CSS;
-        else if (type == "ph")
+        if (type == "ph")
             _type = PHP;
         else if (type == "py")
             _type = PY;
         else
-            _type = HTML;
+            _type = OTHER;
     }
     std::getline(linestream, _protocol, '\n');
 	removeCarriageReturn(_protocol);
@@ -192,13 +189,14 @@ void RequestParser::parseRequest(std::string const &buffer)
             else
             {
                 // retrieve boundary code from content-type!
-                std::stringstream sboundary(key);
-                std::getline(sboundary, _boundaryCode, '\n');
-                //_boundaryCode.erase(0, 1);
-                std::string formBuffer;
 
+                _boundaryCode = _headers["Content-Type"];
+                _boundaryCode.erase(0, 30); //30 characters to boundary
+                std::cout << GREEN << _boundaryCode << RESET_PRINT << std::endl; 
+                std::stringstream sboundary(key);
+                std::string formBuffer;
+                std::getline(sboundary, formBuffer, '\n');
                 std::getline(linestream, formBuffer, '\r');
-                
                 std::stringstream sbuffer(formBuffer);
                 std::getline(sbuffer, key, '=');
                 std::getline(sbuffer, _form.name, ';');
@@ -212,9 +210,11 @@ void RequestParser::parseRequest(std::string const &buffer)
                     std::getline(sbuffer, _form.fileName, ';');
                     _form.fileName.erase(0, 1);
                     _form.fileName.erase(_form.fileName.length() - 1, _form.fileName.length());
-                    std::cout << YELLOW << _form.name << RESET_PRINT << std::endl;
                     std::getline(linestream, formBuffer, '\n');
-                    std::getline(linestream, formBuffer, '\n');
+                    std::getline(linestream, _form.contentType, '\n');
+                    _form.contentType.erase(0, 14);
+                    _form.contentType.erase(_form.contentType.length() - 1, _form.contentType.length());
+                    std::cout << GREEN << _form.contentType << RESET_PRINT << std::endl;
                     std::getline(linestream, formBuffer, '\n');
                     std::getline(linestream, _form.body, '\r');
                     _form.bodyLength = _form.body.size();
@@ -247,6 +247,13 @@ void RequestParser::parseRequest(std::string const &buffer)
     if (localhost == "localhost")
         _host = "127.0.0.1:18000";
     
+    // std::cout << "---------------------------------All headers: " << std::endl;
+    // std::map<std::string, std::string>::iterator it;
+    // it = _headers.begin();
+    // for (it = _headers.begin(); it != _headers.end(); ++it)
+    //     std::cout << GREEN << it->first << " " << it->second << RESET_PRINT << std::endl;
+    // std::cout << "----------xxxx---------";
+    
     // _contentType = _headers["Content-Type"];
     // sstream.str(_contentType);
     // std::string contentType;
@@ -260,13 +267,6 @@ void RequestParser::parseRequest(std::string const &buffer)
     // }
     // else
     //     std::cout << "popola" << std::endl;
-    
-    // std::cout << "---------------------------------All headers: " << std::endl;
-    // std::map<std::string, std::string>::iterator it;
-    // it = _headers.begin();
-    // for (it = _headers.begin(); it != _headers.end(); ++it)
-    //     std::cout << it->first << " " << it->second << std::endl;
-    // std::cout << "----------xxxx---------";
 }
 
 void RequestParser::_handleBoundaries(std::string boundary)

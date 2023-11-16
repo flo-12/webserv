@@ -34,6 +34,8 @@
 #include "ServerSocket.hpp"
 #include "ClientSocket.hpp"
 
+/********* EXTERN VARIABLES **********/
+extern bool sigint_received;
 
 /************ START CLASS ************/
 

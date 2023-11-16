@@ -310,7 +310,8 @@ void	WebServ::serverRun()
 	bool	pollError = false;
 	int		indexPollFd;
 
-	while ( 42 ) {
+	// while ( 42 ) {
+	while ( !sigint_received ) {
 		// Poll for events and check for errors
 		if ( (retPoll = poll(_pollFds, _sockets.size(), TIMEOUT_POLL)) < 0 )
 			throw std::runtime_error("Error: poll() failed");

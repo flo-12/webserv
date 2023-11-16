@@ -15,6 +15,9 @@
 #include <unistd.h>
 #include <cstdlib>
 #include <dirent.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <fcntl.h>
 
 
 typedef struct s_StatusLine

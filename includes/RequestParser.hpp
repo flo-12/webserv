@@ -48,6 +48,7 @@ class RequestParser
                         std::string name;
                         std::string fileName;
                         std::string formBody;
+                        // needs a size attribute here
             };
             
             formObject _form;

@@ -17,16 +17,14 @@
 #include <csignal>	// for signal()
 
 WebServ*	webservPtr = NULL;
-
+bool		sigint_received = false;
 
 // Signal handler function for SIGINT (CTRL+C)
 void	sigint_handler( int signum )
 {
 	(void)signum;
 	std::cout << std::endl << "Received CTRL+C (SIGINT) signal. Exiting..." << std::endl;
-	if ( webservPtr )
-		webservPtr->serverShutdown();
-	std::exit(EXIT_SUCCESS);
+	sigint_received = true;
 }
 
 int	main( int argc, char **argv )
@@ -61,8 +59,8 @@ int	main( int argc, char **argv )
 	catch( const std::exception& e )
 	{
 		std::cerr << e.what() << '\n';
-		if ( webservPtr )
-			webservPtr->serverShutdown();
+		/* if ( webservPtr )
+			webservPtr->serverShutdown(); */
 		return EXIT_FAILURE;
 	}
 	

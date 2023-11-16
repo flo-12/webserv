@@ -14,7 +14,7 @@
 class ServerConfig {
 public:
     // validate config
-    bool    validate(void) const;
+    std::string validate(void) const;
 
     // public methods - for building Response 
     std::string                             getLocationKey(std::string requestUri);
@@ -59,7 +59,7 @@ private:
     std::string                             _serverName;
     int                                     _clientMaxBodySize;
     std::string                             _index;
-    std::map<HttpStatusCode, std::string>   _errorPage; // rename to errorPages
+    std::map<HttpStatusCode, std::string>   _errorPage; 
     std::map<std::string, ServerLocation>   _serverLocations;
     unsigned int                            _decimalIPaddress;
     

@@ -58,6 +58,43 @@ std::string ServerLocation::validate(void) const
     return (errorReturn);
 }
 
+/*
+*   Checks whether a location that will be used for CGI:
+*       - allows at least one methos
+*       - does not specify an autoindex, index, return 
+*       - specifies a cgiPath (the executable like php or python) and a 
+            root folder where the Cgi should be executed  
+*/
+std::string ServerLocation::validateCgiLocation(void) const
+{
+    std::string errorReturn("");
+
+    if (_methods.empty())
+        errorReturn += "\t must specify 'allow_methods'\n";
+
+    // unknown method
+    size_t i;
+    for (i = 0; i < _methods.size(); i++)
+    {
+        if (_methods[i] == GET || _methods[i] == POST || _methods[i] == DELETE)
+            continue;
+        else
+            break;
+    }
+    if (i != _methods.size())
+        errorReturn += "\t method not supported. Please use GET, POST, DELETE\n";
+    
+    // no index, autoindex or return
+    if (!_index.empty() || _autoindex == true || _return.first != 0)
+        errorReturn += "cannot specify index, autoindex or return in CGI\n";
+    
+    // must specify a root and a path 
+    if (_root.empty() || _cgiPath.empty())
+        errorReturn += "CGI must specify a root and a cgi_path\n";
+
+    return (errorReturn);
+}
+
 /*--------------------------- GETTERS AND SETTERS ---------------------------*/
 
 std::string ServerLocation::getIndex(void) const
@@ -98,11 +135,16 @@ bool    ServerLocation::getIsCgi(void) const
         return (true);
 }
 
+void    ServerLocation::setMethods(std::vector<httpMethod> methods)
+{
+    _methods = methods;
+}
+
 /*------------------- CONSTRUCTOR, ASSIGNEMENT, DESTRUCTOR ------------------*/
 
 ServerLocation::ServerLocation()
     :   _index(""), _methods(), _autoindex(false), _root(""),
-        _cgiPath("") //, _isCgi(0)
+        _cgiPath("") 
 {
 }
 
@@ -113,7 +155,7 @@ std::pair<HttpStatusCode, std::string> parseStatusCodeStringPair(std::istringstr
     std::string                             str;
     std::pair<HttpStatusCode, std::string>  newPair;
 
-    (void) key; // might use it later to give more precise runtime_error
+    (void) key;
 
     if (lineStream >> statusCode >> str)
     {

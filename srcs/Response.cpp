@@ -38,6 +38,7 @@ Response::Response( RequestParser request, ServerConfig config )
 
 	_method = request.getMethod();
 	_setPaths( request.getPath() );
+	std::cout << RED << _paths.responseUri << RESET_PRINT << std::endl;
 
 	if ( _method != POST && !_checkPreconditions( ) ) // check again the _method!=POST
 	{
@@ -251,11 +252,20 @@ void	Response::_handlePost()
 		_msgHeader["Content-Length"] = to_string(_msgBodyLength);
 	}
 	else {
-		_setMsgStatusLine( STATUS_201 );
-		_msgBodyLength = 19;
-		_msgHeader["Content-Length"] = to_string(_msgBodyLength);
-		_msgHeader["Content-Type"] = "text/html";
-		_msgBody = "<!DOCTYPE html><html></html>";
+		std::string fileName(_request.getFormObject().fileName);
+		if (!fileName.empty())
+		{
+			if (!_saveFile("./cgi-bin/uploads/" + fileName, 
+						_request.getFormObject().body, 
+						_request.getFormObject().bodyLength))
+			{
+				_readErrorPage( STATUS_500); // check which error to return
+			}
+			else
+				_setMsgStatusLine( STATUS_201 );
+		}
+		else
+			_readErrorPage( STATUS_400 );
 	}
 }
 
@@ -353,18 +363,26 @@ bool	Response::_readFile( std::string path )
 bool	Response::_saveFile( std::string path, std::string content, ssize_t contentLength )
 {
 	std::cout << "Saving file: " << path << std::endl;
+	
+	if ( open(path.c_str(), O_RDWR|O_CREAT, S_IRWXU|S_IRWXO|S_IRWXG) == -1 )
+		std::cerr << RED << "Error: could not open file with exeution rights \"" << path << "\"" << RESET_PRINT << std::endl;
+	
 	std::ofstream	file(path.c_str(), std::ios::out | std::ios::trunc | std::ios::binary);
 
-	if ( !file.is_open() )
+	if ( !file.is_open() ) {
+		std::cout << RED << "ERROR OPENING FILE" << RESET_PRINT << std::endl;
 		return false;
-
+	}
+	std::cout << RED << "Content length is " << contentLength << RESET_PRINT <<  std::endl;
 	// Write content to file
-	if (!file.write( content.c_str(), contentLength )) {
+
+	if (!file.write(reinterpret_cast<const char*>(content.c_str()), contentLength)) {
 		file.close();
 		return false;
 	}
 
 	file.close();
+
 	return true;
 }
 

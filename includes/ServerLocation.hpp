@@ -13,6 +13,7 @@ class ServerLocation
 public:
     // validation
     std::string validate(void) const;
+    std::string validateCgiLocation(void) const;
 
     // Getters
     std::string                             getIndex(void) const;
@@ -22,6 +23,9 @@ public:
     std::string                             getRoot(void) const;
     std::string                             getCgiPath(void) const;
     bool                                    getIsCgi(void) const;
+
+    // Setters
+    void                                    setMethods(std::vector<httpMethod> methods);
 
     // Constructors, Assignment, Destructors
     ServerLocation(void);
@@ -37,7 +41,6 @@ private:
     std::pair<HttpStatusCode, std::string>  _return;
     std::string                             _root;
     std::string                             _cgiPath;
-    // bool                                    _isCgi;
 
     // parsing
     void    _parseMethods(std::istringstream &lineStream);

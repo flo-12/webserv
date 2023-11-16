@@ -19,11 +19,8 @@
 # define RESET_PRINT "\033[0m"
 
 // Default server configurations:
-# define DEFAULT_HOST "127.0.0.1"
-# define DEFAULT_ROOT "/www"
 # define DEFAULT_CLIENT_MAX_BODY_SIZE 300000
 # define DEFAULT_INDEX "index.html"
-# define DEFAULT_PORT 8000
 
 // Webserv:
 # define MAX_CONNECTIONS 500

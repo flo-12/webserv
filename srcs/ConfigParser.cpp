@@ -6,8 +6,6 @@ void    ConfigParser::print(void) const
 {
     for (size_t i = 0; i < serverConfigs().size(); ++i) 
     {
-        // std::cout   << RED << "Server configuration [" << i + 1 << "] " 
-                    // << RESET_PRINT << std::endl;
         std::cout   << serverConfigs()[i] << "\n";
     }
 }
@@ -42,8 +40,6 @@ std::string ConfigParser::_extractLocationKey(std::string &line)
     
     if (startPos != std::string::npos && endPos != std::string::npos) 
         substr = line.substr(startPos, endPos - startPos);
-    // do I need an else here?
-
     std::istringstream lineStream(substr);
     lineStream >> key;
 
@@ -59,12 +55,7 @@ std::string ConfigParser::_extractLocationBlock(std::string &line,
     std::string substr;
 
     startPos = line.find_first_of("{", startPos) + 1;
-    if (startPos != std::string::npos && endPos != std::string::npos) 
-        substr = line.substr(startPos, endPos - startPos);
-    else
-    {
-        // std::cout << "Missing closing bracket\n";
-    }
+    substr = line.substr(startPos, endPos - startPos);
     std::getline(configFile, line, '}');
     return (substr + line);
 }
@@ -87,8 +78,6 @@ void    ConfigParser::_parseConfigFile(std::ifstream &configFile)
             continue;
         else if (line.find("server {") != std::string::npos) 
         {
-            // technically I would need to do the same here as in the location
-            // block, as there could be important information on the same line
             insideServerBlock = true;
             serverBlock.str("");
             serverBlock.clear();
@@ -98,7 +87,6 @@ void    ConfigParser::_parseConfigFile(std::ifstream &configFile)
             std::string key = _extractLocationKey(line);
             std::stringstream locationBlock(_extractLocationBlock(line, configFile));
             tmpVecLB.insert(std::make_pair(key, ServerLocation(locationBlock)));
-            // how do I check that there is no "}" missing?
         }
         else if (line.find("}") != std::string::npos) 
         {
@@ -117,8 +105,6 @@ void    ConfigParser::_parseConfigFile(std::ifstream &configFile)
     if (insideServerBlock == true)
         std::runtime_error("Error, missing }");
 }
-
-/*----------------------------- PRIVATE METHODS -----------------------------*/
 
 /*--------------------------- GETTERS AND SETTERS ---------------------------*/
 
@@ -184,5 +170,3 @@ ConfigParser& ConfigParser::operator=(const ConfigParser& other)
 ConfigParser::~ConfigParser(void)
 {
 }
-
-/*-------------------------- OPERATOR OVERLOADING ---------------------------*/

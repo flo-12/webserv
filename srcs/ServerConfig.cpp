@@ -13,7 +13,6 @@ std::pair<HttpStatusCode, std::string>   ServerConfig::getRedirection(std::strin
     std::pair<std::string, ServerLocation> location;
 
     return(_serverLocations[locationKey].getReturn());
-
 }
 
 /*
@@ -63,6 +62,12 @@ std::string ServerConfig::getUri(std::string locationKey, std::string requestUri
     if (root.empty())
         root = _root;
 
+    // check if locationKey is a CGI
+    if (!_serverLocations[locationKey].getCgiPath().empty())
+    {
+        // std::cout << GREEN << "Root is " << 
+        return(root + requestUri);    
+    }
 	// remove locationKey from string
     pathSuffix = requestUri.substr(locationKey.length(), requestUri.length());
 
@@ -82,9 +87,6 @@ std::string ServerConfig::getUri(std::string locationKey, std::string requestUri
         if (fileName.empty())
             fileName =  "/" + _index;
     }
-    // std::cout << "Prefix " << root << std::endl; 
-    // std::cout << "Suffix " << pathSuffix << std::endl; 
-    // std::cout << "FileName " << fileName << std::endl; 
 
     if (pathSuffix[0] != '/')
         pathSuffix = "/" + pathSuffix;
@@ -112,7 +114,7 @@ std::string ServerConfig::getLocationKey(std::string requestUri)
             it != _serverLocations.end(); ++it)
         {
             if (it->first == fileExt)
-                return (requestUri);
+                return (fileExt);
         }
     }
 
@@ -133,7 +135,36 @@ std::string ServerConfig::getLocationKey(std::string requestUri)
     return ("/");
 }
 
-// bool    ServerConfig::validate(void) const
+/*
+*   Validates the parsed configurations, returns a string containing error
+*   information
+*   1. No port specified
+*   2. No IP specified
+*   3. No root specified
+*   4. Duplicate ports for same IP address
+*/
+
+std::string ServerConfig::validate(void) const
+{
+    std::string errorReturn("");
+
+    if (_ports.size() == 0)
+        errorReturn += "no port specified\n";
+    if (_host.empty())
+        errorReturn += "no IP (host) specified\n";
+    if (_root.empty())
+        errorReturn += "no root specified\n";
+
+    // check for duplicate ports
+    for (std::vector<int>::const_iterator it = _ports.begin();
+            it != _ports.end(); it++)
+    {
+        std::vector<int>::const_iterator duplicate = std::find(it + 1, _ports.end(), *it);
+        if (duplicate != _ports.end())
+            errorReturn += "duplicate ports\n";
+    }
+    return (errorReturn);
+}
 
 /*----------------------------- PRIVATE METHODS -----------------------------*/
 
@@ -214,18 +245,31 @@ bool    ServerConfig::_setDefaultLocations(void)
     it = _serverLocations.find("/");
     if (it == _serverLocations.end())
     {
-        std::cout   << YELLOW << "Warning: " << RESET_PRINT << "no location "
+        ServerLocation          newLocation;
+        std::vector<httpMethod> methods;
+
+        methods.push_back(GET);
+        methods.push_back(POST);
+        newLocation.setMethods(methods);
+        _serverLocations.insert(std::make_pair("/", newLocation));
+        b = true;
+        std::cout   << YELLOW << "WARNING: " << RESET_PRINT << "no location "
                     << "/" << " provided, setting default\n";
-       _serverLocations.insert(std::make_pair("/", ServerLocation()));
-       b = true;
     }
     it = _serverLocations.find("/uploads");
     if (it == _serverLocations.end())
     {
-        std::cout   << YELLOW << "Warning: " << RESET_PRINT << "no location "
-                    << "/uploads" << " provided, setting default\n";
-       _serverLocations.insert(std::make_pair("/uploads", ServerLocation())); 
+        ServerLocation           newLocation;
+        std::vector<httpMethod>  methods;
+
+        methods.push_back(GET);
+        methods.push_back(POST);
+        methods.push_back(DELETE);
+        newLocation.setMethods(methods);
+        _serverLocations.insert(std::make_pair("/uploads", newLocation));
         b = true;
+        std::cout   << YELLOW << "WARNING: " << RESET_PRINT << "no location "
+                    << "/uploads" << " provided, setting default\n";
     }
     return (b);
 }
@@ -235,20 +279,27 @@ sets default configurations for the server name, error pages and location
 */
 void    ServerConfig::_setDefaultConfig(int index)
 {
-    (void)index;
-
     _setDefaultErrorPages(); 
     _setDefaultLocations();
-        // std::cout   << YELLOW << " SERVER CONFIGURATION [" << index + 1
-        //             << "] " << RESET_PRINT << " \n";
-    
-    // display warings here as well
+
     if (_serverName.empty())
+    {
         _serverName = "server_" +  to_string(index);
+        std::cout   << YELLOW << "WARNING: " << RESET_PRINT << "no server_name"
+                    << " provided, setting: " << _serverName << "\n";
+    }
     if (_clientMaxBodySize == 0)
-        _clientMaxBodySize = 300000;
+    {
+        _clientMaxBodySize = DEFAULT_CLIENT_MAX_BODY_SIZE;
+        std::cout   << YELLOW << "WARNING: " << RESET_PRINT << "no client_max_body_size"
+                    << " provided, setting: " << _clientMaxBodySize << "\n";
+    }
     if (_index.empty())
-        _index = "index.html";
+    {
+        _index = DEFAULT_INDEX;
+        std::cout   << YELLOW << "WARNING: " << RESET_PRINT << "index"
+                    << " provided, setting: " << _index << "\n";
+    }
 }
 
 /*
@@ -386,10 +437,12 @@ saves it as properties of its own class.
 ServerConfig::ServerConfig(std::stringstream &serverBlock, int index,
     std::map<std::string, ServerLocation> vecLB)
 :   _ports(), _host(""), _root(""),  _serverName(""), 
-    _clientMaxBodySize(DEFAULT_CLIENT_MAX_BODY_SIZE), _index(DEFAULT_INDEX), 
+    _clientMaxBodySize(0), _index(""), 
     _errorPage(), _serverLocations(), _decimalIPaddress(0)
 {
     std::string error("");
+
+    std::cout << "Server config " << index << std::endl; 
 
     _parseServerConfig(serverBlock);
     _decimalIPaddress = _ipStringToInt(_host);
@@ -401,13 +454,20 @@ ServerConfig::ServerConfig(std::stringstream &serverBlock, int index,
     for (std::map<std::string, ServerLocation>:: const_iterator it = _serverLocations.begin();
             it != _serverLocations.end(); it++)
     {
-        error += it->second.validate();
+        if (it->first[0] == '.')
+            error += it->second.validateCgiLocation();
+        else
+            error += it->second.validate();
     }
 
     // I probably need a seperate validation for the CGI location
 
+    error += validate();
+
     if (!error.empty())
         throw(std::runtime_error( "\033[0;31mError\033[0m while parsing config file \n" + error));
+
+    std::cout << std::endl;
 }
 
 ServerConfig::ServerConfig(const ServerConfig &copy)
@@ -416,7 +476,6 @@ ServerConfig::ServerConfig(const ServerConfig &copy)
         _index(copy._index), _errorPage(copy._errorPage), 
         _serverLocations(copy._serverLocations), _decimalIPaddress(copy._decimalIPaddress)
 {
-    // std::cout << "Server Config copy constructor called" << std::endl;
 }
 
 ServerConfig& ServerConfig::operator=(const ServerConfig &other)

@@ -6,7 +6,7 @@
 /*   By: pdelanno <pdelanno@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/10/24 12:35:40 by pdelanno          #+#    #+#             */
-/*   Updated: 2023/11/14 18:42:53 by pdelanno         ###   ########.fr       */
+/*   Updated: 2023/11/16 12:54:54 by pdelanno         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,6 +21,7 @@
 # include <map>
 # include <vector>
 # include <sys/types.h>
+# include <cstdlib>
 
 class RequestParser
 {
@@ -43,11 +44,12 @@ class RequestParser
             class formObject
             {
                 public:
-                        formObject() {};
+                        formObject() {bodyLength = 0;};
                         ~formObject() {};
                         std::string name;
                         std::string fileName;
-                        std::string formBody;
+                        std::string body;
+                        ssize_t bodyLength;
             };
             
             formObject _form;
@@ -70,6 +72,7 @@ class RequestParser
             formObject  getFormObject() const;
 
             std::string removeCarriageReturn(std::string &str);
+            ssize_t &_getFormBodyLength(ssize_t &bodyLength);
 
 };
 std::ostream &operator<<(std::ostream &str, RequestParser &rp);

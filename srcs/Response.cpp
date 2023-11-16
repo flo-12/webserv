@@ -34,7 +34,7 @@ Response::Response( RequestParser request, ServerConfig config )
 	if ( _httpStatusCodeLookup.empty() )
 		throw std::runtime_error("Error: http status code database empty");
 
-	std::cout << RED << request.getFormObject().formBody << RESET_PRINT << std::endl;
+	std::cout << RED << request.getFormObject().body << RESET_PRINT << std::endl;
 
 	_method = request.getMethod();
 	_setPaths( request.getPath() );

@@ -6,7 +6,7 @@
 /*   By: pdelanno <pdelanno@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/10/24 12:52:22 by pdelanno          #+#    #+#             */
-/*   Updated: 2023/11/14 18:40:26 by pdelanno         ###   ########.fr       */
+/*   Updated: 2023/11/16 12:54:43 by pdelanno         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -114,6 +114,16 @@ std::string RequestParser::removeCarriageReturn(std::string &str)
     return (str);
 }
 
+ssize_t &RequestParser::_getFormBodyLength(ssize_t &bodyLength)
+{
+    std::cout << YELLOW << bodyLength << RESET_PRINT << std::endl;
+    ssize_t contentLength = std::atol(_headers["Content-Length"].c_str());
+    _boundaryCode.size();
+    std::cout << contentLength << std::endl;
+    //###########
+    return (bodyLength);
+}
+
 void RequestParser::parseRequest(std::string const &buffer)
 {
     //splitBuffer()
@@ -195,16 +205,23 @@ void RequestParser::parseRequest(std::string const &buffer)
                 _form.name.erase(0, 1);
                 _form.name.erase(_form.name.length() - 1, _form.name.length());
                 std::getline(sbuffer, key, '=');
-                std::getline(sbuffer, _form.fileName, ';');
-                _form.fileName.erase(0, 1);
-                _form.fileName.erase(_form.fileName.length() - 1, _form.fileName.length());
-                std::cout << YELLOW << _form.name << RESET_PRINT << std::endl;
-                std::getline(linestream, formBuffer, '\n');
-                std::getline(linestream, formBuffer, '\n');
-                std::getline(linestream, formBuffer, '\n');
-                std::getline(linestream, _form.formBody, '\r');
-                std::getline(linestream, formBuffer, '\r');
-                std::getline(linestream, _body, '\r');
+                if (!sbuffer.good())
+                    ;
+                else
+                {
+                    std::getline(sbuffer, _form.fileName, ';');
+                    _form.fileName.erase(0, 1);
+                    _form.fileName.erase(_form.fileName.length() - 1, _form.fileName.length());
+                    std::cout << YELLOW << _form.name << RESET_PRINT << std::endl;
+                    std::getline(linestream, formBuffer, '\n');
+                    std::getline(linestream, formBuffer, '\n');
+                    std::getline(linestream, formBuffer, '\n');
+                    std::getline(linestream, _form.body, '\r');
+                    _form.bodyLength = _form.body.size();
+                    _getFormBodyLength(_form.bodyLength);
+                    std::getline(linestream, formBuffer, '\r');
+                    std::getline(linestream, _body, '\r');
+                }
                 _body.erase(0, 1);
             }
             break ;

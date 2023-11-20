@@ -4,8 +4,9 @@
 # include <vector>
 # include <string>
 # include <sstream>
+# include <iostream>
 # include <sys/types.h>
-#include <sys/stat.h>
+# include <sys/stat.h>
 
 
 /**************************************************************/
@@ -35,9 +36,9 @@
 # define HTTP_STATS_CODE_FILE "./database/http_status_codes.csv"
 
 // Debug-Messages:
-#define	DEBUG_REQUEST 0
+#define	DEBUG_REQUEST 1
 #define	DEBUG_REQUEST_HEADER 1
-#define	DEBUG_RESPONSE 0
+#define	DEBUG_RESPONSE 1
 #define	DEBUG_RESPONSE_HEADER 1
 #define	DEBUG_SERVER_STATE 1
 #define	DEBUG_CONFIG_WARNING 0
@@ -115,5 +116,6 @@ std::string			parseSingleValueString(std::istringstream &lineStream, const std::
 bool				isDirectory(const std::string path);
 std::string			extractFileExtension(const std::string &str);
 std::string			httpMethodToString(httpMethod method);
+void				printDebug( std::string msg, int print, std::string color, int nbr_tabs );
 
 #endif

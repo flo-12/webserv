@@ -82,3 +82,16 @@ std::string	parseSingleValueString(std::istringstream &lineStream, const std::st
                 "' too many values"));
     return (value);
 }
+
+/* printDebug:
+*	Prints the message passed as argument if the print argument is true (=1)
+*	In the color passed as argument.
+*/
+void	printDebug( std::string msg, int print, std::string color, int nbr_tabs )
+{
+	if ( print == 1 ) {
+		while ( nbr_tabs-- > 0 )
+			std::cout << "\t";
+		std::cout << color << msg << RESET_PRINT << std::endl;
+	}
+}

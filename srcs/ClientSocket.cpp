@@ -176,11 +176,8 @@ ReceiveStatus	ClientSocket::receiveRequest()
 	// Check if request is complete and set Content-Length
 	if ( _requestComplete() )
 	{
-		std::cout << "+++++++++++++++++ Request +++++++++++++++++" << std::endl;
-		std::cout << _request.buffer << std::endl;
-		std::cout << "+++++++++++++++++++++++++++++++++++++++++++" << std::endl;
-		//_saveFile( "./html/surfer_POST.jpeg", _request.buffer );
-
+		printDebug( "+++++++++++++++++ Request +++++++++++++++++\n" + _request.buffer + "+++++++++++++++++++++++++++++++++++++++++++", 
+			DEBUG_REQUEST, BABY_BLUE, 0 );
 		_request.pendingReceive = false;
 		return READ_DONE;
 	}
@@ -196,22 +193,10 @@ ReceiveStatus	ClientSocket::receiveRequest()
 */
 ResponseStatus	ClientSocket::sendResponse()
 {
-	/* std::cout << " +++++++++++++++++++ INITIAL POST +++++++++++++++++++" << std::endl;
-	std::cout << _request.buffer << std::endl;
-	std::cout << " +++++++++++++++++++++++++++++++++++++++++++++++++++" << std::endl; */
-
 	if ( !_response.startSending ) {
 		_response.startTime = time(0);
 
 		RequestParser	requestParser( _request.buffer, _request.contentLength );
-		//std::cout << requestParser << std::endl;
-
-		// for printing ascii values
-		
-		// for (size_t i = 0; i < requestParser.getHost().length(); ++i)
-		// {
-		// 	std::cout << "Char at pos " << i << ": " << static_cast<int>(requestParser.getHost()[i]) << std::endl;
-		// }
 
 		try
 		{
@@ -229,9 +214,8 @@ ResponseStatus	ClientSocket::sendResponse()
 		_response.startSending = true;
 	}
 
-	/* std::cout << "+++++++++++++++++ Response +++++++++++++++++" << std::endl;
-	std::cout << GREEN << _response.message << RESET_PRINT << std::endl;
-	std::cout << "+++++++++++++++++++++++++++++++++++++++++++" << std::endl; */
+	printDebug( "+++++++++++++++++ Response +++++++++++++++++\n" + _request.buffer + "+++++++++++++++++++++++++++++++++++++++++++", 
+			DEBUG_RESPONSE, MAGENTA, 0 );
 
 	ssize_t	bytesSent = send(_fd, _response.message.c_str(), _response.msgLength, 0);
 	if ( bytesSent < static_cast<ssize_t>(-1) )

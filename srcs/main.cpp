@@ -12,7 +12,7 @@
 
 #include "../includes/common.hpp"
 #include "../includes/ConfigParser.hpp"
-#include "../includes/Webserv.hpp"
+#include "../includes/WebServ.hpp"
 #include <cstdlib>	// for EXIT_SUCCESS and EXIT_FAILURE
 #include <csignal>	// for signal()
 

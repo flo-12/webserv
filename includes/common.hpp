@@ -16,6 +16,8 @@
 # define RED "\033[0;31m"
 # define GREEN "\033[0;32m"
 # define YELLOW "\033[0;33m"
+# define BABY_BLUE "\033[0;34m"
+# define MAGENTA "\033[0;35m"
 # define RESET_PRINT "\033[0m"
 
 // Default server configurations:
@@ -31,6 +33,17 @@
 // Response:
 # define HTTP_VERSION "HTTP/1.1"
 # define HTTP_STATS_CODE_FILE "./database/http_status_codes.csv"
+
+// Debug-Messages:
+#define	DEBUG_REQUEST 0
+#define	DEBUG_REQUEST_HEADER 1
+#define	DEBUG_RESPONSE 0
+#define	DEBUG_RESPONSE_HEADER 1
+#define	DEBUG_SERVER_STATE 1
+#define	DEBUG_CONFIG_WARNING 0
+#define	DEBUG_SERVER_CONFIG 0
+#define	DEBUG_PATHS 0
+#define	DEBUG_PRECOND 0
 
 
 /**************************************************************/

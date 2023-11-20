@@ -34,3 +34,6 @@
 *.out
 *.app
 ./webserv
+
+# uploads
+.cgi-bin/uploads/*

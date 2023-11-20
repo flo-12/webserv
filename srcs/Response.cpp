@@ -333,6 +333,7 @@ bool	Response::_readFile( std::string path )
 	// Seek to the end of the file to determine its size
 	file.seekg(0, std::ios::end);
 	std::streampos fileSize = file.tellg();
+	std::cout << "File size is " << fileSize << std::endl;
 	file.seekg(0, std::ios::beg);
 
 	if ( fileSize == -1 ) {

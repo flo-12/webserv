@@ -214,11 +214,16 @@ void RequestParser::parseRequest(std::string const &buffer)
                     std::getline(linestream, _form.contentType, '\n');
                     _form.contentType.erase(0, 14);
                     _form.contentType.erase(_form.contentType.length() - 1, _form.contentType.length());
-                    std::cout << GREEN << _form.contentType << RESET_PRINT << std::endl;
                     std::getline(linestream, formBuffer, '\n');
-                    std::getline(linestream, _form.body, '\r');
-                    _form.bodyLength = _form.body.size();
                     _getFormBodyLength(_form.bodyLength);
+
+                    char* buffer = new char[_form.bodyLength];
+                    linestream.read(buffer, _form.bodyLength);
+                    buffer[_form.bodyLength] = '\0';
+                    _form.body = std::string(buffer, _form.bodyLength);
+                    delete[] buffer;
+                    
+                    // std::getline(linestream, _form.body, _form.bodyLength);
                     std::getline(linestream, formBuffer, '\r');
                     std::getline(linestream, _body, '\r');
                 }

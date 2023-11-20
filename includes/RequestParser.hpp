@@ -22,6 +22,7 @@
 # include <vector>
 # include <sys/types.h>
 # include <cstdlib>
+# include <stdlib.h>
 
 class RequestParser
 {
@@ -50,6 +51,7 @@ class RequestParser
                         std::string fileName;
                         std::string contentType;
                         std::string body;
+                        // char        *bodyBuffer;
                         ssize_t bodyLength;
             };
             

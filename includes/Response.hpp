@@ -49,8 +49,6 @@ class Response
 
 		t_StatusLine						_msgStatusLine;
 		std::map<std::string,std::string>	_msgHeader;
-			// Content-Length
-			// Location
 		std::string							_msgBody;
 		ssize_t								_msgBodyLength;
 
@@ -71,10 +69,6 @@ class Response
 		bool	_saveFile( std::string path, std::string content, ssize_t contentLength );
 		bool	_deleteFile( std::string path );
 		bool	_readDir( std::string path );
-
-		// Prototyping
-		// void		_buildResponse( std::string path );
-		// void		_buildResponseCGI( std::string path );
 
 	public:
 		Response( HttpStatusCode httpStatus, ServerConfig config );

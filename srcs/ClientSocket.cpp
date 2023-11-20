@@ -27,7 +27,6 @@ ClientSocket::ClientSocket( int serverFd, ServerConfig config )
 
 ClientSocket::~ClientSocket()
 {
-	//std::cout << "ClientSocket destructor (fd: " << _fd << ", serverFd: " << _serverFd << ")" << std::endl;
 }
 
 
@@ -119,13 +118,14 @@ void	ClientSocket::closeConnection( HttpStatusCode httpStatus )
 		{
 			_response.message = "HTTP/1.1 500 Internal Server Error\r\n\r\n";
 			_response.msgLength = _response.message.length();
-			std::cerr << e.what() << '\n';
+			printDebug( e.what(), DEBUG_SERVER_STATE_ERROR, RED, 2 );
 		}
 		_response.startSending = true;
 		sendResponse();
 	}
 
-	std::cout << "\tClientSocket::closeConnection() with httpStatus: " << httpStatus << "\n" << std::endl;
+	printDebug( "Closing connection with httpStatus: " + to_string(httpStatus), 
+		DEBUG_SERVER_STATE, RESET_PRINT, 1 );
 }
 
 /* hasTimeout:
@@ -209,7 +209,7 @@ ResponseStatus	ClientSocket::sendResponse()
 		{
 			_response.message = "HTTP/1.1 500 Internal Server Error\r\n\r\n";
 			_response.msgLength = _response.message.length();
-			std::cerr << e.what() << '\n';
+			printDebug( e.what(), DEBUG_SERVER_STATE_ERROR, RED, 2 );
 		}
 		_response.startSending = true;
 	}

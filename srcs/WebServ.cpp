@@ -37,12 +37,11 @@ WebServ::WebServ( std::vector<t_ipPort> configInfo, std::vector<ServerConfig> _s
 		_initPollFd( serverSocket->getFd(), POLLIN, 0, &_pollFds[i] );
 	}
 
-	std::cout << "Server initialized..." << std::endl;
+	printDebug( "Server initialized...", DEBUG_SERVER_STATE, GREEN, 1 );
 }
 
 WebServ::~WebServ()
 {
-	std::cout << "WebServ destructor" << std::endl;
 	serverShutdown();
 }
 
@@ -79,7 +78,8 @@ void	WebServ::_restartServerSocket( ServerSocket *socket )
 	{
 		i = _getFreePollFd();
 		if ( i == -1 ) {
-			std::cerr << "Error: _restartServerSocket (no free _pollFds) - taking last possible." << std::endl;
+			printDebug( "Error: _restartServerSocket (no free _pollFds) - taking last possible.", 
+				DEBUG_SERVER_STATE_ERROR, RED, 2 );
 			i = MAX_CONNECTIONS - 1;
 			close( _pollFds[i].fd );
 		}
@@ -92,8 +92,9 @@ void	WebServ::_restartServerSocket( ServerSocket *socket )
 */
 void	WebServ::_forgetConnection( Socket *socket, HttpStatusCode httpStatus )
 {
-	//std::cout << "Socket forgetting (fd: " << socket->getFd() << ")" << std::endl;
-
+	printDebug( "Socket forgetting (fd: " + to_string(socket->getFd()) + ")", 
+		DEBUG_SERVER_STATE_DEEP, GREEN, 2 );
+	
 	// Send error page if client socket
 	if ( socket->getType() == CLIENT )
 		dynamic_cast<ClientSocket*>(socket)->closeConnection(httpStatus);
@@ -141,11 +142,13 @@ int	WebServ::_getHandleIdxPollFd( Socket *socket )
 	else
 	{
 		if ( socket->getType() == SERVER ) {
-			std::cerr << "Error: serverRun() - server socket not found in _pollFds -> restart server" << std::endl;
+			printDebug( "Error: server socket not found in _pollFds (restart server)", 
+				DEBUG_SERVER_STATE_ERROR, RED, 2 );
 			dynamic_cast<ServerSocket*>(socket)->restartServerSocket();
 		}
 		else if ( socket->getType() == CLIENT ) {
-			std::cerr << "Error: serverRun() - client socket not found in _pollFds -> close connection" << std::endl;
+			printDebug( "Error: client socket not found in _pollFds (close connection)", 
+				DEBUG_SERVER_STATE_ERROR, RED, 2 );
 			_forgetConnection( socket, STATUS_500 );
 		}
 		return -1;
@@ -178,15 +181,18 @@ bool	WebServ::_pollError( short revent, Socket *socket)
 	if ( socket->getType() == SERVER)
 	{
 		if ( revent & POLLNVAL ) {		// invalid request
-			std::cerr << "Error: POLLNVAL on poll() revent - restarting server socket (fd: " << socket->getFd() << ")" << std::endl;
+			printDebug( "Error: POLLNVAL on poll() revent - restarting server socket (fd: " + to_string(socket->getFd()) + ")", 
+				DEBUG_SERVER_STATE_ERROR, RED, 2 );
 			pollError = true;
 		}
 		else if ( revent & POLLERR ) {	// error condition
-			std::cerr << "Error: POLLERR on poll() revent - restarting server socket (fd: " << socket->getFd() << ")" << std::endl;
+			printDebug( "Error: POLLERR on poll() revent - restarting server socket (fd: " + to_string(socket->getFd()) + ")", 
+				DEBUG_SERVER_STATE_ERROR, RED, 2 );
 			pollError = true;
 		}
 		else if ( revent & POLLHUP ) {	// hang up
-			std::cerr << "Error: POLLHUB on poll() revent - restarting server socket (fd: " << socket->getFd() << ")" << std::endl;
+			printDebug( "Error: POLLHUB on poll() revent - restarting server socket (fd: " + to_string(socket->getFd()) + ")", 
+				DEBUG_SERVER_STATE_ERROR, RED, 2 );
 			pollError = true;
 		}
 		if ( pollError )	// restart server socket
@@ -195,15 +201,18 @@ bool	WebServ::_pollError( short revent, Socket *socket)
 	else if ( socket->getType() == CLIENT )
 	{
 		if ( revent & POLLNVAL ) {		// invalid request
-			std::cerr << "Error: POLLNVAL on poll() revent - closing client socket socket (fd: " << socket->getFd() << ")" << std::endl;
+			printDebug( "Error: POLLNVAL on poll() revent - closing client socket socket (fd: " + to_string(socket->getFd()) + ")", 
+				DEBUG_SERVER_STATE_ERROR, RED, 2 );
 			pollError = true;
 		}
 		else if ( revent & POLLERR ) {	// error condition
-			std::cerr << "Error: POLLERR on poll() revent - closing client socket (fd: " << socket->getFd() << ")" << std::endl;
+			printDebug( "Error: POLLERR on poll() revent - closing client socket (fd: " + to_string(socket->getFd()) + ")", 
+				DEBUG_SERVER_STATE_ERROR, RED, 2 );
 			pollError = true;
 		}
 		else if ( revent & POLLHUP ) {	// hang up
-			std::cerr << "Error: POLLHUB on poll() revent - closing client socket (fd: " << socket->getFd() << ")" << std::endl;
+			printDebug( "Error: POLLHUB on poll() revent - closing client socket (fd: " + to_string(socket->getFd()) + ")", 
+				DEBUG_SERVER_STATE_ERROR, RED, 2 );
 			pollError = true;
 		}
 		if ( pollError )	// close client socket & remove from _pollFds and _sockets
@@ -219,12 +228,14 @@ bool	WebServ::_pollError( short revent, Socket *socket)
 */
 void	WebServ::_acceptNewConnection( ServerSocket *serverSocket )
 {
-	std::cout << "\tAccepting new connection (fd: " << serverSocket->getFd() << ")" << std::endl;
+	printDebug( "Accepting new connection (fd: " + to_string(serverSocket->getFd()) + ")", 
+		DEBUG_SERVER_STATE, GREEN, 1 );
 
 	int	indexFreeFd = _getFreePollFd();
 	if ( indexFreeFd == -1 )	// no free _pollFds
 	{
-		std::cerr << "Error: _acceptNewConnection (no free _pollFds)." << std::endl;
+		printDebug( "Warning: _acceptNewConnection (no free _pollFds)", 
+			DEBUG_SERVER_STATE, YELLOW, 1 );
 		return ;
 	}
 
@@ -237,7 +248,7 @@ void	WebServ::_acceptNewConnection( ServerSocket *serverSocket )
 	}
 	catch(const std::exception& e)
 	{
-		std::cerr << e.what() << '\n';
+		printDebug( e.what(), DEBUG_SERVER_STATE_ERROR, RED, 2 );
 		delete clientSocket;
 	}	
 }
@@ -248,7 +259,8 @@ void	WebServ::_acceptNewConnection( ServerSocket *serverSocket )
 */
 void	WebServ::_receiveRequest( ClientSocket *clientSocket )
 {
-	std::cout << "\tReceiving request (fd: " << clientSocket->getFd() << ")" << std::endl;
+	printDebug( "Receiving request (fd: " + to_string(clientSocket->getFd()) + ")", 
+		DEBUG_SERVER_STATE, GREEN, 1 );
 
 	int		indexPollFd = _getHandleIdxPollFd( clientSocket );
 	if ( indexPollFd == -1 )
@@ -272,7 +284,8 @@ void	WebServ::_receiveRequest( ClientSocket *clientSocket )
 */
 void	WebServ::_sendResponse( ClientSocket *clientSocket )
 {
-	std::cout << "\tSending response (fd: " << clientSocket->getFd() << ")" << std::endl;
+	printDebug( "Sending response (fd: " + to_string(clientSocket->getFd()) + ")", 
+		DEBUG_SERVER_STATE, GREEN, 1 );
 
 	int		indexPollFd = _getHandleIdxPollFd( clientSocket );
 	if ( indexPollFd == -1 )
@@ -284,9 +297,8 @@ void	WebServ::_sendResponse( ClientSocket *clientSocket )
 	else if ( responseStatus == SEND_DONE )
 	{
 		_initPollFd( -1, 0, 0, &_pollFds[indexPollFd] );
-		//std::cout << "Sending Response done" << std::endl;
+		printDebug( "Sending Response done", DEBUG_SERVER_STATE_DEEP, GREEN, 2 );
 		_forgetConnection( clientSocket, NO_ERROR );
-		//std::cout << std::endl;
 	}	
 }
 

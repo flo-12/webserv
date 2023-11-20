@@ -226,11 +226,14 @@ bool    ServerConfig::_setDefaultErrorPages(void)
     {
         if (_errorPage.find(arrErrorCodes[i]) == _errorPage.end())
         {
-            std::cout   << YELLOW << "WARNING: " << RESET_PRINT << "no error page " 
-                        << arrErrorCodes[i] << " provided, default set to " 
-                        << arrErrorDefaultLocations[i] << std::endl;
-            _errorPage.insert(std::make_pair(arrErrorCodes[i], 
-                                                arrErrorDefaultLocations[i]));
+            if (DEBUG_CONFIG_WARNING)
+            {
+                std::cout   << YELLOW << "WARNING: " << RESET_PRINT << "no error page " 
+                            << arrErrorCodes[i] << " provided, default set to " 
+                            << arrErrorDefaultLocations[i] << std::endl;
+                _errorPage.insert(std::make_pair(arrErrorCodes[i], 
+                                                    arrErrorDefaultLocations[i]));
+            }
             b = true;
         }
     }
@@ -253,8 +256,11 @@ bool    ServerConfig::_setDefaultLocations(void)
         newLocation.setMethods(methods);
         _serverLocations.insert(std::make_pair("/", newLocation));
         b = true;
-        std::cout   << YELLOW << "WARNING: " << RESET_PRINT << "no location "
-                    << "/" << " provided, setting default\n";
+        if (DEBUG_CONFIG_WARNING)
+        {
+            std::cout   << YELLOW << "WARNING: " << RESET_PRINT << "no location "
+                        << "/" << " provided, setting default\n";
+        }
     }
     it = _serverLocations.find("/uploads");
     if (it == _serverLocations.end())
@@ -268,8 +274,11 @@ bool    ServerConfig::_setDefaultLocations(void)
         newLocation.setMethods(methods);
         _serverLocations.insert(std::make_pair("/uploads", newLocation));
         b = true;
-        std::cout   << YELLOW << "WARNING: " << RESET_PRINT << "no location "
-                    << "/uploads" << " provided, setting default\n";
+        if (DEBUG_CONFIG_WARNING)
+        {
+            std::cout   << YELLOW << "WARNING: " << RESET_PRINT << "no location "
+                        << "/uploads" << " provided, setting default\n";
+        }
     }
     return (b);
 }
@@ -285,20 +294,29 @@ void    ServerConfig::_setDefaultConfig(int index)
     if (_serverName.empty())
     {
         _serverName = "server_" +  to_string(index);
-        std::cout   << YELLOW << "WARNING: " << RESET_PRINT << "no server_name"
-                    << " provided, setting: " << _serverName << "\n";
+        if (DEBUG_CONFIG_WARNING)
+        {
+            std::cout   << YELLOW << "WARNING: " << RESET_PRINT << "no server_name"
+                        << " provided, setting: " << _serverName << "\n";
+        }
     }
     if (_clientMaxBodySize == 0)
     {
         _clientMaxBodySize = DEFAULT_CLIENT_MAX_BODY_SIZE;
-        std::cout   << YELLOW << "WARNING: " << RESET_PRINT << "no client_max_body_size"
-                    << " provided, setting: " << _clientMaxBodySize << "\n";
+        if (DEBUG_CONFIG_WARNING)
+        {
+            std::cout   << YELLOW << "WARNING: " << RESET_PRINT << "no client_max_body_size"
+                        << " provided, setting: " << _clientMaxBodySize << "\n";
+        }
     }
     if (_index.empty())
     {
         _index = DEFAULT_INDEX;
-        std::cout   << YELLOW << "WARNING: " << RESET_PRINT << "index"
-                    << " provided, setting: " << _index << "\n";
+        if (DEBUG_CONFIG_WARNING)
+        {
+            std::cout   << YELLOW << "WARNING: " << RESET_PRINT << "no index"
+                        << " provided, setting: " << _index << "\n";
+        }
     }
 }
 
@@ -390,7 +408,7 @@ std::string ServerConfig::getServerName(void) const
     return (_serverName);
 }
 
-int ServerConfig::getClientMaxBodySize(void) const
+ssize_t ServerConfig::getClientMaxBodySize(void) const
 {
     return (_clientMaxBodySize);
 }
@@ -444,7 +462,7 @@ ServerConfig::ServerConfig(std::stringstream &serverBlock, int index,
 {
     std::string error("");
 
-    std::cout << "Server config " << index << std::endl; 
+    // std::cout << "Server config " << index << std::endl; 
 
     _parseServerConfig(serverBlock);
     _decimalIPaddress = _ipStringToInt(_host);
@@ -467,9 +485,10 @@ ServerConfig::ServerConfig(std::stringstream &serverBlock, int index,
     error += validate();
 
     if (!error.empty())
+    {
         throw(std::runtime_error( "\033[0;31mError\033[0m while parsing config file \n" + error));
-
-    std::cout << std::endl;
+        std::cout << std::endl;
+    }
 }
 
 ServerConfig::ServerConfig(const ServerConfig &copy)

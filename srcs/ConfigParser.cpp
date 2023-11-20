@@ -2,7 +2,7 @@
 
 /*------------------------------PUBLIC METHODS ------------------------------*/
 
-void    ConfigParser::print(void) const
+void    ConfigParser::_print(void) const
 {
     for (size_t i = 0; i < serverConfigs().size(); ++i) 
     {
@@ -150,6 +150,8 @@ ConfigParser::ConfigParser(std::string file)
         throw (std::runtime_error("Error: could not open file"));
 	
     _parseConfigFile(configFile);
+    if (DEBUG_SERVER_CONFIG)
+		_print();
 	configFile.close();
 }
 

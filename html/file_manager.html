@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Awesome File Manager</title>
     <link rel="stylesheet" type="text/css" href="file_manager_styles.css">
+	<script src="file_manager_script.js" defer></script>
 </head>
 <body>
     <header>
@@ -14,75 +15,19 @@
         </div>
     </header>
     <h1>POST File Upload</h1>
-	<form action="/" method="post" enctype="multipart/form-data">
+<!-- 	<form action="/" method="post" enctype="multipart/form-data">
 		<label for="file">File:</label>
 		<input type="file" id="file" name="file" required>
 		<br>
 		<button type="submit">Submit</button>
+	</form> -->
+	<form id="uploadForm" action="/" method="post" enctype="multipart/form-data">
+		<label for="file">File:</label>
+		<input type="file" id="file" name="file" required>
+		<br>
+		<button type="submit" id="submitBtn">Submit</button>
 	</form>
 
     <ul id="fileList"></ul>
-
-    <script>
-
-        // Function to send GET request for a file
-        const sendGetRequest = (fileName) => {
-            fetch(`/cgi-bin/uploads/${fileName}`, {
-                method: 'GET',
-            })
-            .then(response => response.blob())
-            .then(blob => {
-                // Create a link element and trigger the download
-                const link = document.createElement('a');
-                link.href = URL.createObjectURL(blob);
-                link.download = fileName;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            })
-            .catch(error => console.error('Error downloading file:', error));
-        };
-
-        // Function to send DELETE request for a file
-        const sendDeleteRequest = (fileName) => {
-            fetch(`/cgi-bin/uploads/${fileName}`, {
-                method: 'DELETE',
-            })
-            .then(response => {
-                if (response.ok) {
-                    console.log(`File ${fileName} deleted successfully`);
-                } else {
-                    console.error(`Failed to delete file ${fileName}`);
-                }
-            })
-            .catch(error => console.error('Error deleting file:', error));
-        };
-
-        // Fetch folder contents using JavaScript
-        fetch('/folder-contents.php')
-            .then(response => response.json())
-            .then(data => {
-                const fileList = document.getElementById('fileList');
-
-                data.forEach(item => {
-                    const listItem = document.createElement('li');
-                    listItem.textContent = item;
-
-                    const getButton = document.createElement('button');
-                    getButton.textContent = 'GET';
-                    getButton.addEventListener('click', () => sendGetRequest(item));
-
-                    const deleteButton = document.createElement('button');
-                    deleteButton.textContent = 'DELETE';
-                    deleteButton.addEventListener('click', () => sendDeleteRequest(item));
-
-                    listItem.appendChild(getButton);
-                    listItem.appendChild(deleteButton);
-
-                    fileList.appendChild(listItem);
-                });
-            })
-            .catch(error => console.error('Error fetching folder contents:', error));
-    </script>
 </body>
 </html>

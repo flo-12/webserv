@@ -45,58 +45,6 @@
         </div>
     </main>
 
-	<div id="cookie-popup">
-        This website uses cookies to ensure you get the best experience on our website.
-        <button id="accept-btn">Accept</button>
-    </div>
-
-    <!-- Your Page Content Goes Here -->
-
-    <script>
-        // Function to set a cookie
-        function setCookie(name, value, days) {
-            const date = new Date();
-            date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
-            const expires = "expires=" + date.toUTCString();
-            document.cookie = name + "=" + value + ";" + expires + ";path=/";
-        }
-
-        // Function to check if the cookie has been accepted
-        function checkCookie() {
-            const accepted = getCookie("cookiesAccepted");
-            if (!accepted) {
-                // Show the cookie popup
-                document.getElementById("cookie-popup").style.display = "block";
-            }
-        }
-
-        // Function to get a cookie value
-        function getCookie(name) {
-            const cookies = document.cookie.split(';');
-            for (let i = 0; i < cookies.length; i++) {
-                const cookie = cookies[i].trim();
-                if (cookie.startsWith(name + "=")) {
-                    return cookie.substring(name.length + 1);
-                }
-            }
-            return "";
-        }
-
-        // Function to handle the "Accept" button click
-        function acceptCookies() {
-            // Set the "cookiesAccepted" cookie
-            setCookie("cookiesAccepted", "true", 365);
-            // Hide the cookie popup
-            document.getElementById("cookie-popup").style.display = "none";
-        }
-
-        // Check if the cookies have been accepted on page load
-        window.onload = checkCookie;
-
-        // Add click event listener to the "Accept" button
-        document.getElementById("accept-btn").addEventListener("click", acceptCookies);
-    </script>
-
 	<footer>
         <p>Authors: <a href="https://github.com/flo-12">Florian</a>, 
 					<a href="https://github.com/dubmix">Pierre</a> & 

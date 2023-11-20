@@ -28,7 +28,7 @@ public:
     std::string                             getHost(void) const;
     std::string                             getRoot(void) const;
     std::string                             getServerName(void) const;
-    int                                     getClientMaxBodySize(void) const;
+    ssize_t                                 getClientMaxBodySize(void) const;
     std::string                             getIndex(void) const;
     std::map<HttpStatusCode, std::string>   getErrorPages(void) const;
     std::map<std::string,ServerLocation>    getLocations(void) const;
@@ -57,7 +57,7 @@ private:
     std::string                             _host;
     std::string                             _root;
     std::string                             _serverName;
-    int                                     _clientMaxBodySize;
+    ssize_t                                 _clientMaxBodySize;
     std::string                             _index;
     std::map<HttpStatusCode, std::string>   _errorPage; 
     std::map<std::string, ServerLocation>   _serverLocations;

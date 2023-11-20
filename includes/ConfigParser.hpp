@@ -13,7 +13,6 @@ class ConfigParser
 public:
     // public methods
     std::vector<t_ipPort>   getIpPort(void);
-    void                    print(void) const;
 
     // Getters and Setters
     std::vector<ServerConfig> serverConfigs(void) const;
@@ -31,6 +30,7 @@ private:
     void                _parseConfigFile(std::ifstream& configFile);
     std::string         _extractLocationKey(std::string &line);
     std::string         _extractLocationBlock(std::string &line, std::ifstream &configFile);
+    void                _print(void) const;
 
     // data
     std::vector<ServerConfig>   _serverConfigs;

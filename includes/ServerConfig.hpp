@@ -19,7 +19,6 @@ public:
     // public methods - for building Response 
     std::string                             getLocationKey(std::string requestUri);
     std::string                             getUri(std::string locationKey, std::string requestURI);
-    std::string                             retrievePathErrorPage(HttpStatusCode errorStatus);
     std::pair<HttpStatusCode, std::string>  getRedirection(std::string locationKey);
 
     // Getters

@@ -198,13 +198,16 @@ void	Response::_handleGet()
 			_setMsgStatusLine( STATUS_200 );
 	}
 	else if ( _isCgiNeeded() ) {
-		// call CGI
 		try {
 			std::string cgi_folder = _config.getLocations()[_paths.confLocKey].getRoot();
 			CGIHandler	CGIHandler( _request, cgi_folder );
-			_msgBody = CGIHandler.getBody();	// change: execute is called by default constructor and CGIHandler has a getBody method
-			_msgBodyLength = CGIHandler.getBodyLength();	// change: CGIHandler.getBodyLength()
-			_setMsgStatusLine( STATUS_200 );	// check for errors!!!!
+			if ( CGIHandler.hasTimeout() )
+				_readErrorPage( STATUS_504 );
+			else {
+				_msgBody = CGIHandler.getBody();
+				_msgBodyLength = CGIHandler.getBodyLength();
+				_setMsgStatusLine( STATUS_200 );
+			}
 		}
 		catch (std::exception &e) {
 			std::cerr << e.what() << std::endl;
@@ -237,10 +240,10 @@ void	Response::_handlePost()
 			std::string cgi_folder = _config.getLocations()[_paths.confLocKey].getRoot();
 			CGIHandler	CGIHandler( _request, cgi_folder );
 			if ( CGIHandler.hasTimeout() )
-				_readErrorPage( STATUS_504 );	// check error code
+				_readErrorPage( STATUS_504 );
 			else {
-				_msgBody = CGIHandler.getBody();	// change: execute is called by default constructor and CGIHandler has a getBody method
-				_msgBodyLength = CGIHandler.getBodyLength();	// change: CGIHandler.getBodyLength()
+				_msgBody = CGIHandler.getBody();
+				_msgBodyLength = CGIHandler.getBodyLength();
 				_setMsgStatusLine( STATUS_200 );	// check for errors!!!!
 				_msgHeader["Content-Length"] = to_string(_msgBodyLength);
 			}
@@ -258,7 +261,7 @@ void	Response::_handlePost()
 						_request.getFormObject().body, 
 						_request.getFormObject().bodyLength))
 			{
-				_readErrorPage( STATUS_500); // check which error to return
+				_readErrorPage( STATUS_500 );
 			}
 			else
 				_setMsgStatusLine( STATUS_201 );
@@ -270,7 +273,8 @@ void	Response::_handlePost()
 
 /* _handleDelete:
 *	Handles DELETE request.
-*	
+*	Deletes the file in the response-URI path if it has
+*	execution rights.
 */
 void	Response::_handleDelete()
 {
@@ -318,10 +322,10 @@ void	Response::_readErrorPage( HttpStatusCode httpStatus )
 	_msgHeader["Content-Length"] = to_string(_msgBodyLength);
 }
 
-/* __isCgiNeeded:
+/* _isCgiNeeded:
 *	Checks if CGI is needed for the request.
 *		
-*	Returns true if CGI is needed, false otherwise.
+*	Return: true if CGI is needed, false otherwise.
 */
 bool	Response::_isCgiNeeded()
 {
@@ -402,12 +406,19 @@ bool	Response::_deleteFile( std::string path )
 {
 	const char* filename = path.c_str();
 
-    if (std::remove(filename) != 0)
-        return false;
+    if (std::remove(filename) != 0) {
+		printDebug("Error: could not delete file \"" + path + "\"", 
+			DEBUG_SERVER_STATE_ERROR, RED, 0);
+		return false;
+	}
 	else
 		return true;
 }
 
+/* _buildDirectoryHtmlElement:
+*	Builds a list html element for the given directory name for autoindex.
+*	Return: the html element as std::string.
+*/
 std::string Response::_buildDirectoryHtmlElement(std::string dirName, bool isDirectory)
 {
 	if (isDirectory == true)
@@ -416,20 +427,21 @@ std::string Response::_buildDirectoryHtmlElement(std::string dirName, bool isDir
     	return ("<li><a href=" + dirName + ">" + dirName + "</a></li>");
 }
 
+/* _readDir:
+*	Reads the directory at the given path and stores the content in _msgBody.
+*	Return: true if the directory could be read, false otherwise.
+*/
 bool	Response::_readDir( std::string path )
 {
 	DIR* dir = opendir(path.c_str());
     std::string htmlBody1("<!DOCTYPE html> <html> <head> <title>List of Directories</title> </head> <body> <h1>List of Directories</h1> <ul>");
     std::string dirList("");
     std::string htmlBody2("</ul> </body> </html>");
-    if (!dir) {
+    if (!dir)
         return (false);
-    }
 
     struct dirent* entry;
-    while ((entry = readdir(dir))) 
-	{
-        // Filter out "." entries
+    while ((entry = readdir(dir))) {
         if (std::strcmp(entry->d_name, ".") == 0)
             continue;
         dirList += _buildDirectoryHtmlElement(entry->d_name, isDirectory(path + 
@@ -443,7 +455,7 @@ bool	Response::_readDir( std::string path )
 
 
 /* _readHttpStatusCodeDatabase:
-*	Reads the http status code database and stores it in _httpStatusCodeLookup.
+*	Reads the http status code database (csv) and stores it in _httpStatusCodeLookup.
 */
 void	Response::_readHttpStatusCodeDatabase()
 {
@@ -516,4 +528,3 @@ ssize_t		Response::getMsgLength() const
 {
 	return getMsgHeader().length() + _msgBodyLength;
 }
-

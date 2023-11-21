@@ -16,24 +16,6 @@ std::pair<HttpStatusCode, std::string>   ServerConfig::getRedirection(std::strin
 }
 
 /*
-*   Given the HTTP status code, connects the root directory of the server with
-*   the directory of the error page. If no error page is found, an empty string
-*   is returned
-*/
-std::string ServerConfig::retrievePathErrorPage(const HttpStatusCode errorStatus) 
-{
-    std::string errorDir;
-
-    errorDir = _errorPage[errorStatus];
-    if (errorDir.empty())
-        return ("");
-    else
-    {
-        return (_root + "/" + errorDir);
-    }
-}
-
-/*
 *   Builds the complete (internal) path for serving a file by combining the
 *   requestUri with the information specified in the location. The requestUri
 *   will not contain the part of the locationKey anymore

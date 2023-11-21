@@ -194,7 +194,7 @@ void CGIHandler::_handleParentProcess(RequestParser rp, int pid, int *pipeServer
 		pidWait = waitpid(pid, NULL, WNOHANG);
 	}
 	if (pidWait == 0) {
-        printDebug("Child process still running", DEBUG_CGI, MAGENTA, 1);
+        printDebug("Child process still running and will be killed", DEBUG_CGI, MAGENTA, 1);
 		kill(1, SIGKILL);
 		_hasTimeout = true;
 	}

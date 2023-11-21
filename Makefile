@@ -26,8 +26,12 @@ HEADER_FILES= WebServ Socket ClientSocket ServerSocket RequestParser CGIHandler 
 				common ConfigParser ServerConfig ServerLocation Response
 HEADER		= $(addprefix $(HEADER_DIR),$(addsuffix .hpp,$(HEADER_FILES)))
 
+UPLOAD_DIR	= ./cgi-bin/uploads/
+
 # RULES
 all: $(OBJ_DIR) $(NAME)
+	@rm -fr $(UPLOAD_DIR)
+	@mkdir $(UPLOAD_DIR)
 
 $(NAME): $(OBJS)
 	@echo "Compiling $(NAME)..."
@@ -49,6 +53,7 @@ clean:
 fclean: clean
 	@echo "Removing executable and object files..."
 	@rm -f $(NAME)
+	@rm -fr $(UPLOAD_DIR)
 
 re: fclean all
 

@@ -6,7 +6,7 @@
 /*   By: pdelanno <pdelanno@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/10/24 12:35:40 by pdelanno          #+#    #+#             */
-/*   Updated: 2023/11/16 15:02:33 by pdelanno         ###   ########.fr       */
+/*   Updated: 2023/11/21 09:01:36 by pdelanno         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -38,7 +38,6 @@ class RequestParser
             std::string _body;
             ssize_t     _bodyLength;
             std::string _contentType;
-            //std::string _formData;
             bool _isUpload;
             std::string _boundaryCode;
 
@@ -51,17 +50,19 @@ class RequestParser
                         std::string fileName;
                         std::string contentType;
                         std::string body;
-                        // char        *bodyBuffer;
                         ssize_t bodyLength;
             };
             
             formObject _form;
             void _handleBoundaries(std::string boundary);
+            void _processForm(std::stringstream &linestream);
+            ssize_t &_getFormBodyLength(ssize_t &bodyLength);
             
     public:
             RequestParser();
             RequestParser(std::string buffer, ssize_t contentLength);
             ~RequestParser();
+
             void        parseRequest(std::string const &buffer);
             httpMethod  getMethod() const;
             std::string getPath() const;
@@ -75,7 +76,6 @@ class RequestParser
             formObject  getFormObject() const;
 
             std::string removeCarriageReturn(std::string &str);
-            ssize_t &_getFormBodyLength(ssize_t &bodyLength);
 
 };
 std::ostream &operator<<(std::ostream &str, RequestParser &rp);

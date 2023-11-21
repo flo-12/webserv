@@ -222,7 +222,7 @@ bool	WebServ::_pollError( short revent, Socket *socket)
 	return pollError;
 }
 
-/* _acceptNewConnection:eleted
+/* _acceptNewConnection:
 *	Accept new connection and add client to _pollFds and _sockets.
 *	Nothing happens if MAX_CONNECTIONS is reached or no free _pollFds.
 */
@@ -322,7 +322,6 @@ void	WebServ::serverRun()
 	bool	pollError = false;
 	int		indexPollFd;
 
-	// while ( 42 ) {
 	while ( !sigint_received ) {
 		// Poll for events and check for errors
 		if ( (retPoll = poll(_pollFds, _sockets.size(), TIMEOUT_POLL)) < 0 )

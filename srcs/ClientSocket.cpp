@@ -125,7 +125,7 @@ void	ClientSocket::closeConnection( HttpStatusCode httpStatus )
 	}
 
 	printDebug( "Closing connection with httpStatus: " + to_string(httpStatus), 
-		DEBUG_SERVER_STATE, RESET_PRINT, 1 );
+		DEBUG_SERVER_STATE, GREEN, 1 );
 }
 
 /* hasTimeout:

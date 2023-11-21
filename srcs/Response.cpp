@@ -66,6 +66,8 @@ void	Response::_setPaths( std::string reqUri )
 	_paths.requestUri = reqUri;
 	_paths.confLocKey = _config.getLocationKey( reqUri );
 	_paths.responseUri = _config.getUri( _paths.confLocKey, reqUri );
+	printDebug("\tPaths:\n\t\trequestUri: " + _paths.requestUri + "\n\t\tresponseUri: " + _paths.responseUri, 
+		DEBUG_PATHS, BABY_BLUE, 0);
 }
 
 /* _setMsgStatusLine:
@@ -101,7 +103,6 @@ bool	Response::_checkPreconditions()
 	// differentiate for DELETE and GET <--- TODO
 	if ( access(_paths.responseUri.c_str(), F_OK) != 0 ) {
 		printDebug("File not found: " + _paths.responseUri, DEBUG_PRECOND, YELLOW, 0);
-		//_readErrorPage( STATUS_404 );
 		_msgStatusLine.statusCode = STATUS_404;
 		return false;
 	}
@@ -110,7 +111,6 @@ bool	Response::_checkPreconditions()
 	if ( (_method == GET && access(_paths.responseUri.c_str(), R_OK) != 0 ) 
 		|| (_method == DELETE && access(_paths.responseUri.c_str(), X_OK) != 0 ) ) {
 		printDebug("No access to file: " + _paths.responseUri, DEBUG_PRECOND, YELLOW, 0);
-		_readErrorPage( STATUS_403 );
 		_msgStatusLine.statusCode = STATUS_403;
 		return false;
 	}
@@ -123,7 +123,6 @@ bool	Response::_checkPreconditions()
 			break ;
 		else if ( it + 1 == methods.end() ) {
 			printDebug("Method not allowed: " + httpMethodToString(_method), DEBUG_PRECOND, YELLOW, 0);
-			//_readErrorPage( STATUS_405 );
 			_msgStatusLine.statusCode = STATUS_405;
 			return false;
 		}
@@ -132,7 +131,6 @@ bool	Response::_checkPreconditions()
 	// check if HTTP version is supported
 	if ( _request.getProtocol() != _httpVersionAllowed ) {
 		printDebug("HTTP version not supported: " + _request.getProtocol(), DEBUG_PRECOND, YELLOW, 0);
-		//_readErrorPage( STATUS_405 );
 		_msgStatusLine.statusCode = STATUS_405;
 		return false;
 	}
@@ -140,7 +138,6 @@ bool	Response::_checkPreconditions()
 	// check if request body size is valid
 	if ( _request.getBodyLength() > _config.getClientMaxBodySize() ) {
 		printDebug("Request body too large: " + to_string(_request.getBodyLength()), DEBUG_PRECOND, YELLOW, 0);
-		//_readErrorPage( STATUS_413 );
 		_msgStatusLine.statusCode = STATUS_413;
 		return false;
 	}
@@ -148,7 +145,6 @@ bool	Response::_checkPreconditions()
 	// check if Host field is present
 	if ( _request.getHost() != _config.getHost() + ":" + _config.getPort()) {
 		printDebug("Host field not present or wrong: " + _request.getHost(), DEBUG_PRECOND, YELLOW, 0);
-		//_readErrorPage( STATUS_400 );
 		_msgStatusLine.statusCode = STATUS_400;
 		return false;
 	}
@@ -156,7 +152,6 @@ bool	Response::_checkPreconditions()
 	// check if content length is smaller 0
 	if ( _request.getContentLength() < static_cast<ssize_t>(0) ) {
 		printDebug("Content length smaller than 0: " + to_string(_request.getContentLength()), DEBUG_PRECOND, YELLOW, 0);
-		//_readErrorPage( STATUS_400 );
 		_msgStatusLine.statusCode = STATUS_400;
 		return false;
 	}
@@ -166,7 +161,7 @@ bool	Response::_checkPreconditions()
 
 /* _checkRedirection:
 *	Checks if the request URI is a redirection.
-*		- yes ⇒ response with Location and 30X status code
+*		- yes ⇒ set Location field in header
 *	Returns true if the request URI is a redirection, false otherwise.
 */
 bool	Response::_checkRedirection()
@@ -183,16 +178,14 @@ bool	Response::_checkRedirection()
 
 /* _handleGet:
 *	Handles a GET request.
-*		1) Check if CGI is needed
-*			- yes ⇒ call CGI
-*		2) [no] Create GET response
-*			- read file from path and store in _msgBody and set _msgBodyLength
-*			- fill out _msgStatusLine and _msgHeader
+*	Differentiate in behaviour between:
+*		- autoindex: readirectory and create html page
+*		- CGI call: call CGI
+*		- "normal" request: read file and create response
 */
 void	Response::_handleGet()
 {
-	// Check autoindex
-	if (_paths.responseUri[_paths.responseUri.length() - 1] == '/')
+	if (_paths.responseUri[_paths.responseUri.length() - 1] == '/')	// Check autoindex
 	{
 		_readDir( _paths.responseUri );
 		if ( !_readDir( _paths.responseUri ) )
@@ -227,10 +220,10 @@ void	Response::_handleGet()
 
 /* _handlePost:
 *	Handles a POST request.
-*		- if CGI is needed ⇒ call CGI
-*		- else: Creates POST response for
-*			- upload file (create file)
-*			- submit form without file
+*	Differentiate in behaviour between:
+*		- CGI call: call CGI
+*		- "normal" request: save file (if request includes file) and create response
+*			-> build error page if no file upload
 */
 void	Response::_handlePost()
 {
@@ -271,7 +264,7 @@ void	Response::_handlePost()
 	}
 }
 
-/*
+/* _handleDelete:
 *	Handles DELETE request.
 *	
 */
@@ -319,6 +312,19 @@ void	Response::_readErrorPage( HttpStatusCode httpStatus )
 		}
 	}
 	_msgHeader["Content-Length"] = to_string(_msgBodyLength);
+}
+
+/* __isCgiNeeded:
+*	Checks if CGI is needed for the request.
+*		
+*	Returns true if CGI is needed, false otherwise.
+*/
+bool	Response::_isCgiNeeded()
+{
+	if ( (_method == GET || _method == POST) && (_request.getType() == PHP || _request.getType() == PY) )
+		return true;
+	else
+		return false;
 }
 
 /* _readFile:
@@ -369,7 +375,7 @@ bool	Response::_saveFile( std::string path, std::string content, ssize_t content
 	if ( open(path.c_str(), O_RDWR|O_CREAT, S_IRWXU|S_IRWXO|S_IRWXG) == -1 )
 		printDebug("Error: could not open file \"" + path + "\" with exeution rights ", 
 			DEBUG_SERVER_STATE_ERROR, RED, 0);
-		
+
 	std::ofstream	file(path.c_str(), std::ios::out | std::ios::trunc | std::ios::binary);
 
 	if ( !file.is_open() ) {
@@ -415,7 +421,6 @@ bool	Response::_readDir( std::string path )
     if (!dir) {
         return (false);
     }
-
 
     struct dirent* entry;
     while ((entry = readdir(dir))) 
@@ -506,24 +511,5 @@ std::string	Response::getMsgHeader() const
 ssize_t		Response::getMsgLength() const
 {
 	return getMsgHeader().length() + _msgBodyLength;
-}
-
-
-
-/**************************************************************/
-/*                  PROTOTYPING METHODS                       */
-/**************************************************************/
-
-/* __isCgiNeeded:
-*	Checks if CGI is needed for the request.
-*		
-*	Returns true if CGI is needed, false otherwise.
-*/
-bool	Response::_isCgiNeeded()
-{
-	if ( (_method == GET || _method == POST) && (_request.getType() == PHP || _request.getType() == PY) )
-		return true;
-	else
-		return false;
 }
 

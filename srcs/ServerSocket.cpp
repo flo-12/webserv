@@ -20,13 +20,10 @@ ServerSocket::ServerSocket( unsigned int ip, int port, ServerConfig config )
 	: Socket( SERVER, config ), _ip(ip), _port(port), _nbrRestarts(0)
 {
 	setupSocket();
-
-	//std::cout << "Server socket created (ip: " << _ip << ", port: " << _port << ")" << std::endl;
 }
 
 ServerSocket::~ServerSocket()
 {
-	//std::cout << "ServerSocket destructor (ip: " << _ip << ", port: " << _port << ")" << std::endl;
 }
 
 

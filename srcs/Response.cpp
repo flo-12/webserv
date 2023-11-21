@@ -51,7 +51,6 @@ Response::Response( RequestParser request, ServerConfig config )
 
 Response::~Response()
 {
-	
 }
 
 
@@ -281,7 +280,8 @@ void	Response::_handleDelete()
 	if (_deleteFile(_paths.responseUri) == true)
 		_setMsgStatusLine( STATUS_200 );
 	else {
-		std::cout << GREEN << "Error deleting file" << RESET_PRINT << std::endl;
+		printDebug("Error: delete file \"" + _paths.responseUri + "\" failed", 
+			DEBUG_SERVER_STATE_ERROR, RED, 0);
 		_readErrorPage( STATUS_404 );
 	}
 }
@@ -367,12 +367,13 @@ bool	Response::_readFile( std::string path )
 bool	Response::_saveFile( std::string path, std::string content, ssize_t contentLength )
 {
 	if ( open(path.c_str(), O_RDWR|O_CREAT, S_IRWXU|S_IRWXO|S_IRWXG) == -1 )
-		std::cerr << RED << "Error: could not open file with exeution rights \"" << path << "\"" << RESET_PRINT << std::endl;
-	
+		printDebug("Error: could not open file \"" + path + "\" with exeution rights ", 
+			DEBUG_SERVER_STATE_ERROR, RED, 0);
+		
 	std::ofstream	file(path.c_str(), std::ios::out | std::ios::trunc | std::ios::binary);
 
 	if ( !file.is_open() ) {
-		std::cout << RED << "ERROR OPENING FILE" << RESET_PRINT << std::endl;
+		printDebug("Error: open file \"" + path + "\" failed", DEBUG_SERVER_STATE_ERROR, RED, 0);
 		return false;
 	}
 
@@ -443,7 +444,8 @@ void	Response::_readHttpStatusCodeDatabase()
 
 	if ( !file.is_open() )
 	{
-		std::cerr << "Error: could not open http status code database (" << HTTP_STATS_CODE_FILE << ")" << std::endl;
+		printDebug("Error: open file http status code \"" + static_cast<std::string>(HTTP_STATS_CODE_FILE) + "\" failed", 
+			DEBUG_SERVER_STATE_ERROR, RED, 0);
 		return ;
 	}
 	while ( getline( file, line ) )
@@ -524,44 +526,4 @@ bool	Response::_isCgiNeeded()
 	else
 		return false;
 }
-
-// /* FOR CGI-TESTING */
-// void	ClientSocket::_buildResponseCGI( std::string path, RequestParser rp)
-// {
-// 	path = "";
-// 	std::string output;
-// 	CGIHandler CGIHandler(rp);
-// 	output = CGIHandler.execute(rp);
-// 	_response.body = output;
-// 	std::stringstream	strStream;
-// 	strStream << (_response.body.length());
-	
-// 	_response.header = "HTTP/1.1 200 OK\r\n";
-// 	if (rp.getType() == CSS)
-// 		_response.header += "Content-Type: text/css\r\n";
-// 	else
-// 		_response.header += "Content-Type: text/html\r\n";
-// 	_response.header += "Content-Length: " + strStream.str() + "\r\n";
-// 	_response.header += "\r\n";
-// 	_response.contentLength = _response.header.length() + _response.body.length();
-// }
-
-// /* FOR CGI-TESTING */
-// void	Response::_buildResponseCGI( std::string path )
-// {
-// 	path = "";
-// 	std::string output;
-// 	CGIHandler	CGIHandler;
-// 	_msgBody = CGIHandler.execute();
-// 	std::stringstream	strStream;
-// 	strStream << (_msgBody.length());
-
-// 	_msgStatusLine = "HTTP/1.1 200 OK\r\n";
-// 	_msgHeader += "Content-Type: text/html\r\n";
-// 	_msgHeader += "Content-Length: " + strStream.str() + "\r\n";
-// 	_msgHeader += "\r\n";
-// 	_msgLength = _msgStatusLine.length() + _msgHeader.length() + _msgBody.length();
-// }
-
-
 

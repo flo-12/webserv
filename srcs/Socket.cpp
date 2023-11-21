@@ -24,7 +24,6 @@ Socket::Socket( SocketType type, ServerConfig config )
 
 Socket::~Socket()
 {
-	//std::cout << "Socket destructor (fd: " << _fd << ")" << std::endl;
 	if ( _fd != -1 )
 		close(_fd);
 }

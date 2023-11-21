@@ -16,7 +16,8 @@ CGIHandler::CGIHandler() {}
 
 //handle timeout for CGI, in case of endless loop
 
-CGIHandler::CGIHandler(RequestParser rp): _path("") 
+CGIHandler::CGIHandler(RequestParser rp, std::string cgi_folder): 
+	_path("") 
 {
     //std::cout << std::endl << "----------////#####" << std::endl;
     // const int timeout = 5;
@@ -33,7 +34,7 @@ CGIHandler::CGIHandler(RequestParser rp): _path("")
     _env.push_back("REQUEST_METHOD=" + type);
     _env.push_back("CONTENT_TYPE=" + rp.getHeaders()["Content-Type"]);
     _env.push_back("SCRIPT_FILENAME=" + rp.getPath());;
-    _body = _execute(rp);
+    _body = _execute(rp, cgi_folder);
     // while (true)
     // {
     //     clock_t current = clock();
@@ -96,7 +97,7 @@ void CGIHandler::_deleteArgsEnv(char **args, char **env)
     delete env;
 }
 
-std::string CGIHandler::_execute(RequestParser rp)
+std::string CGIHandler::_execute(RequestParser rp, std::string cgi_folder)
 {
     const char *executable = "/usr/bin/php";
     if (rp.getType() != PHP)
@@ -104,7 +105,7 @@ std::string CGIHandler::_execute(RequestParser rp)
         executable = "/usr/bin/python3";
     }
     _args.push_back(executable);
-    _args.push_back("./cgi-bin" + rp.getPath());
+    _args.push_back(cgi_folder + rp.getPath());
     
     int pipeServerToCGI[2];
     int pipeCGIToServer[2];
@@ -127,9 +128,6 @@ std::string CGIHandler::_execute(RequestParser rp)
         std::strcpy(env[i], _env[i].c_str());
     }
     env[_env.size()] = NULL;
-    
-    // if (access(args[1], F_OK) == 0)
-    //     std::cout << "file detected" << std::endl;
     
     std::string output;
     int pid = fork();

@@ -199,7 +199,8 @@ void	Response::_handleGet()
 	else if ( _isCgiNeeded() ) {
 		// call CGI
 		try {
-			CGIHandler	CGIHandler( _request );
+			std::string cgi_folder = _config.getLocations()[_paths.confLocKey].getRoot();
+			CGIHandler	CGIHandler( _request, cgi_folder );
 			_msgBody = CGIHandler.getBody();	// change: execute is called by default constructor and CGIHandler has a getBody method
 			_msgBodyLength = CGIHandler.getBodyLength();	// change: CGIHandler.getBodyLength()
 			_setMsgStatusLine( STATUS_200 );	// check for errors!!!!
@@ -240,12 +241,19 @@ void	Response::_handlePost()
 	std::cout << " +++++++++++++++++++++++++++++++++++++++++++++++++++++++++" << std::endl; */
 
 	if ( _isCgiNeeded() ) {
-		// call CGI
-		CGIHandler	CGIHandler( _request );
-		_msgBody = CGIHandler.getBody();	// change: execute is called by default constructor and CGIHandler has a getBody method
-		_msgBodyLength = CGIHandler.getBodyLength();	// change: CGIHandler.getBodyLength()
-		_setMsgStatusLine( STATUS_200 );	// check for errors!!!!
-		_msgHeader["Content-Length"] = to_string(_msgBodyLength);
+		try {
+			// call CGI
+			std::string cgi_folder = _config.getLocations()[_paths.confLocKey].getRoot();
+			CGIHandler	CGIHandler( _request, cgi_folder );
+			_msgBody = CGIHandler.getBody();	// change: execute is called by default constructor and CGIHandler has a getBody method
+			_msgBodyLength = CGIHandler.getBodyLength();	// change: CGIHandler.getBodyLength()
+			_setMsgStatusLine( STATUS_200 );	// check for errors!!!!
+			_msgHeader["Content-Length"] = to_string(_msgBodyLength);
+		}
+		catch (std::exception &e) {
+			std::cerr << e.what() << std::endl;
+			_readErrorPage( STATUS_500 );
+		}
 	}
 	else {
 		std::string fileName(_request.getFormObject().fileName);

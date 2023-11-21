@@ -33,14 +33,14 @@ class CGIHandler
 {
     public:
             CGIHandler();
-            CGIHandler(RequestParser rp);
+            CGIHandler(RequestParser rp, std::string cgi_folder);
             ~CGIHandler();
 
             std::string getBody();
             ssize_t getBodyLength();
             
     private:
-            std::string _execute(RequestParser rp);
+            std::string _execute(RequestParser rp, std::string cgi_folder);
             std::string _path;
             std::vector<std::string> _args;
             std::vector<std::string> _env;

@@ -37,3 +37,7 @@
 
 # uploads
 .cgi-bin/uploads/*
+
+# Python script
+ .cgi-bin/__pycache__/*
+ .cgi-bin/__pycache__/

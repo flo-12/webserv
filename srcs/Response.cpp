@@ -34,15 +34,12 @@ Response::Response( RequestParser request, ServerConfig config )
 	if ( _httpStatusCodeLookup.empty() )
 		throw std::runtime_error("Error: http status code database empty");
 
-	std::cout << RED << request.getFormObject().body << RESET_PRINT << std::endl;
-
 	_method = request.getMethod();
 	_setPaths( request.getPath() );
-	std::cout << RED << _paths.responseUri << RESET_PRINT << std::endl;
 
-	if ( _method != POST && !_checkPreconditions( ) ) // check again the _method!=POST
+	if (!_checkPreconditions( ) ) // check again the _method!=POST
 	{
-		_readErrorPage( _msgStatusLine.statusCode );
+		// _readErrorPage( _msgStatusLine.statusCode ); // why did we add this
 	}
 	else if ( _checkRedirection( ) )
 		;
@@ -72,7 +69,6 @@ void	Response::_setPaths( std::string reqUri )
 	_paths.requestUri = reqUri;
 	_paths.confLocKey = _config.getLocationKey( reqUri );
 	_paths.responseUri = _config.getUri( _paths.confLocKey, reqUri );
-	std::cout << "Response path: \"" << _paths.responseUri << "\"" << std::endl;
 }
 
 /* _setMsgStatusLine:
@@ -107,7 +103,7 @@ bool	Response::_checkPreconditions()
 	// check if path/file exists
 	// differentiate for DELETE and GET <--- TODO
 	if ( access(_paths.responseUri.c_str(), F_OK) != 0 ) {
-		std::cerr << YELLOW << "File not found: " << _paths.responseUri << RESET_PRINT << std::endl;
+		printDebug("File not found: " + _paths.responseUri, DEBUG_PRECOND, YELLOW, 0);
 		_readErrorPage( STATUS_404 );
 		return false;
 	}
@@ -115,7 +111,7 @@ bool	Response::_checkPreconditions()
 	// check if right access to path/file
 	if ( (_method == GET && access(_paths.responseUri.c_str(), R_OK) != 0 ) 
 		|| (_method == DELETE && access(_paths.responseUri.c_str(), X_OK) != 0 ) ) {
-			std::cerr << YELLOW << "No access to file: " << _paths.responseUri << RESET_PRINT << std::endl;
+		printDebug("No access to file: " + _paths.responseUri, DEBUG_PRECOND, YELLOW, 0);
 		_readErrorPage( STATUS_403 );
 		return false;
 	}
@@ -127,7 +123,7 @@ bool	Response::_checkPreconditions()
 		if ( *it == _method )
 			break ;
 		else if ( it + 1 == methods.end() ) {
-			std::cerr << YELLOW << "Method not allowed: " << _method << RESET_PRINT << std::endl;
+			printDebug("Method not allowed: " + httpMethodToString(_method), DEBUG_PRECOND, YELLOW, 0);
 			_readErrorPage( STATUS_405 );
 			return false;
 		}
@@ -135,28 +131,28 @@ bool	Response::_checkPreconditions()
 
 	// check if HTTP version is supported
 	if ( _request.getProtocol() != _httpVersionAllowed ) {
-		std::cerr << YELLOW << "HTTP version not supported: \"" << _request.getProtocol() << "\"" << RESET_PRINT << std::endl;
+		printDebug("HTTP version not supported: " + _request.getProtocol(), DEBUG_PRECOND, YELLOW, 0);
 		_readErrorPage( STATUS_405 );
 		return false;
 	}
 
 	// check if request body size is valid
-	if ( _request.getContentLength() > _config.getClientMaxBodySize() ) {	// ask Linus to return ssize_t!!
-		std::cerr << YELLOW << "Request body too large: " << _request.getContentLength() << RESET_PRINT << std::endl;
+	if ( _request.getBodyLength() > _config.getClientMaxBodySize() ) {
+		printDebug("Request body too large: " + to_string(_request.getBodyLength()), DEBUG_PRECOND, YELLOW, 0);
 		_readErrorPage( STATUS_413 );
 		return false;
 	}
 
 	// check if Host field is present
 	if ( _request.getHost() != _config.getHost() + ":" + _config.getPort()) {
-		std::cerr << YELLOW << "Host field not present or wrong: " << _request.getHost() << RESET_PRINT << std::endl;
+		printDebug("Host field not present or wrong: " + _request.getHost(), DEBUG_PRECOND, YELLOW, 0);
 		_readErrorPage( STATUS_400 );
 		return false;
 	}
 
 	// check if content length is smaller 0
 	if ( _request.getContentLength() < static_cast<ssize_t>(0) ) {
-		std::cerr << YELLOW << "Content length smaller 0: " << _request.getContentLength() << RESET_PRINT << std::endl;
+		printDebug("Content length smaller than 0: " + to_string(_request.getContentLength()), DEBUG_PRECOND, YELLOW, 0);
 		_readErrorPage( STATUS_400 );
 		return false;
 	}
@@ -289,7 +285,8 @@ void	Response::_handleDelete()
 */
 void	Response::_readErrorPage( HttpStatusCode httpStatus )
 {
-	std::cout << RED << "_readErrorPage("<< httpStatus << ")" << RESET_PRINT << std::endl;
+	printDebug("_readErrorPage(" + to_string(static_cast<ssize_t>(httpStatus)) + ")", DEBUG_SERVER_STATE_ERROR,
+				RED, 0);
 
 	_setMsgStatusLine( httpStatus );
 
@@ -333,7 +330,6 @@ bool	Response::_readFile( std::string path )
 	// Seek to the end of the file to determine its size
 	file.seekg(0, std::ios::end);
 	std::streampos fileSize = file.tellg();
-	std::cout << "File size is " << fileSize << std::endl;
 	file.seekg(0, std::ios::beg);
 
 	if ( fileSize == -1 ) {
@@ -363,8 +359,6 @@ bool	Response::_readFile( std::string path )
 */
 bool	Response::_saveFile( std::string path, std::string content, ssize_t contentLength )
 {
-	std::cout << "Saving file: " << path << std::endl;
-	
 	if ( open(path.c_str(), O_RDWR|O_CREAT, S_IRWXU|S_IRWXO|S_IRWXG) == -1 )
 		std::cerr << RED << "Error: could not open file with exeution rights \"" << path << "\"" << RESET_PRINT << std::endl;
 	
@@ -374,9 +368,8 @@ bool	Response::_saveFile( std::string path, std::string content, ssize_t content
 		std::cout << RED << "ERROR OPENING FILE" << RESET_PRINT << std::endl;
 		return false;
 	}
-	std::cout << RED << "Content length is " << contentLength << RESET_PRINT <<  std::endl;
-	// Write content to file
 
+	// Write content to file
 	if (!file.write(reinterpret_cast<const char*>(content.c_str()), contentLength)) {
 		file.close();
 		return false;

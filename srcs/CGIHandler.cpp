@@ -179,6 +179,5 @@ std::string CGIHandler::_execute(RequestParser rp)
     }
     _bodyLength = output.length();
     _deleteArgsEnv(args, env);
-    std::cout << "output is: " << output << std::endl;
     return (output);
 }

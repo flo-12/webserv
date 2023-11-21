@@ -61,7 +61,7 @@ class RequestParser
     public:
             RequestParser();
             RequestParser(std::string buffer, ssize_t contentLength);
-            ~RequestParser();
+			~RequestParser();
 
             void        parseRequest(std::string const &buffer);
             httpMethod  getMethod() const;
@@ -71,9 +71,11 @@ class RequestParser
             std::string getProtocol() const;
             std::string getBody() const;
             std::string getHost() const;
+			ssize_t getBodyLength() const;
             std::map<std::string, std::string> getHeaders() const;
             ssize_t     getContentLength() const;
             formObject  getFormObject() const;
+
 
             std::string removeCarriageReturn(std::string &str);
 

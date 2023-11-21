@@ -81,6 +81,16 @@ RequestParser::formObject RequestParser::getFormObject() const
     return(_form);
 }
 
+ssize_t RequestParser::getBodyLength() const
+{
+    return(_bodyLength);
+}
+
+// ssize_t RequestParser::getNewBodyLength() const
+// {
+//     return(_newBodyLength);
+// }
+
 /**************************************************************/
 /*                      PUBLIC METHODS                        */
 /**************************************************************/
@@ -135,12 +145,15 @@ void RequestParser::_processForm(std::stringstream &linestream)
         _form.contentType.erase(_form.contentType.length() - 1, _form.contentType.length());
         std::getline(linestream, formBuffer, '\n');
         _getFormBodyLength(_form.bodyLength);
+		_bodyLength = _form.bodyLength;
         
         char* buffer = new char[_form.bodyLength];
         linestream.read(buffer, _form.bodyLength);
         buffer[_form.bodyLength] = '\0';
         _form.body = std::string(buffer, _form.bodyLength);
         delete[] buffer;
+
+
         
         std::getline(linestream, formBuffer, '\r');
         std::getline(linestream, _body, '\r');
@@ -255,6 +268,7 @@ void RequestParser::parseRequest(std::string const &buffer)
     }
     printDebug("---------------------------", DEBUG_REQUEST_HEADER, BABY_BLUE, 0);
 }
+
 
 /**************************************************************/
 /*                    OVERLOAD OPERATOR                       */

@@ -332,10 +332,6 @@ void ServerConfig::_parseErrorPages(std::istringstream &lineStream) {
         {
             _errorPage[ static_cast<HttpStatusCode>(errorCode)] = errorPage;
         }
-        else
-        {
-            // handle errors like an incomplete key value pair
-        }
     }
 }
 
@@ -381,9 +377,7 @@ void    ServerConfig::_parseServerConfig(std::stringstream &serverBlock)
 
 std::string ServerConfig::getPort(void) const
 {
-    std::stringstream ss;
-    ss << _ports[0];
-    return (ss.str());
+	return (to_string(_port));
 }
 
 std::vector<int>    ServerConfig::getPorts(void) const
@@ -440,6 +434,11 @@ unsigned int    ServerConfig::getDecimalIPaddress(void) const
     return (_decimalIPaddress);
 }
 
+void	ServerConfig::setPort(const int &p)
+{
+	_port = p;
+}
+
 /*------------------- CONSTRUCTOR, ASSIGNEMENT, DESTRUCTOR ------------------*/
 
 ServerConfig::ServerConfig(void)
@@ -454,13 +453,11 @@ saves it as properties of its own class.
 */
 ServerConfig::ServerConfig(std::stringstream &serverBlock, int index,
     std::map<std::string, ServerLocation> vecLB)
-:   _ports(), _host(""), _root(""),  _serverName(""), 
+:   _ports(), _port(0), _host(""), _root(""),  _serverName(""), 
     _clientMaxBodySize(0), _index(""), 
     _errorPage(), _serverLocations(), _decimalIPaddress(0)
 {
     std::string error("");
-
-    // std::cout << "Server config " << index << std::endl; 
 
     _parseServerConfig(serverBlock);
     _decimalIPaddress = _ipStringToInt(_host);
@@ -490,7 +487,7 @@ ServerConfig::ServerConfig(std::stringstream &serverBlock, int index,
 }
 
 ServerConfig::ServerConfig(const ServerConfig &copy)
-    : _ports(copy._ports), _host(copy._host), _root(copy._root), 
+    : _ports(copy._ports), _port(copy._port), _host(copy._host), _root(copy._root), 
         _serverName(copy._serverName), _clientMaxBodySize(copy._clientMaxBodySize),
         _index(copy._index), _errorPage(copy._errorPage), 
         _serverLocations(copy._serverLocations), _decimalIPaddress(copy._decimalIPaddress)
@@ -502,6 +499,7 @@ ServerConfig& ServerConfig::operator=(const ServerConfig &other)
     if (this != &other)
     {
         _ports = other._ports;
+		_port = other._port;
         _host = other._host;
         _root = other._root;
         _serverName = other._serverName;

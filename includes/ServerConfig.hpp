@@ -34,6 +34,9 @@ public:
     std::map<std::string,ServerLocation>    getLocations(void) const;
     unsigned int                            getDecimalIPaddress(void) const;
 
+	// Setters
+	void									setPort(const int &p);
+
     // Constructors, Assignment, Destructors
     ServerConfig(std::stringstream &serverBlock, int index, 
         std::map<std::string, ServerLocation> vecLB);
@@ -54,6 +57,7 @@ private:
     unsigned int    _ipStringToInt(const std::string ipAddress);
 
     std::vector<int>                        _ports;
+	int									 	_port;
     std::string                             _host;
     std::string                             _root;
     std::string                             _serverName;

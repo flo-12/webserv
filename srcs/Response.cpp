@@ -146,7 +146,8 @@ bool	Response::_checkPreconditions()
 	}
 
 	// check if Host field is present
-	if ( _request.getHost() != _config.getHost() + ":" + _config.getPort()) {
+	if ( (_request.getHost() != _config.getHost() + ":" + _config.getPort()) && 
+			(_request.getHost() != _config.getServerName() + ":" + _config.getPort())) {
 		printDebug("Host field not present or wrong: " + _request.getHost(), DEBUG_PRECOND, YELLOW, 0);
 		_msgStatusLine.statusCode = STATUS_400;
 		return false;

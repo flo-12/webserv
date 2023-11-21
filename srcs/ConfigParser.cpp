@@ -18,7 +18,8 @@ std::vector<t_ipPort> ConfigParser::getIpPort(void)
     {
         for (size_t j = 0; j < _serverConfigs[i].getPorts().size(); j++)
         {
-            t_ipPort tmp;
+            t_ipPort	tmp;
+
             tmp.ip = _serverConfigs[i].getDecimalIPaddress();
             tmp.port = _serverConfigs[i].getPorts()[j];
             vecIpPort.push_back(tmp);
@@ -123,9 +124,10 @@ std::vector<ServerConfig> ConfigParser::serverConfigs(void) const
         for (size_t j = 0; j < _serverConfigs[i].getPorts().size(); j++)
         {
             ServerConfig    tmp(_serverConfigs[i]);
+			int port;
 
-            (tmp.getPorts()).clear();
-            (tmp.getPorts()).push_back(_serverConfigs[i].getPorts()[j]);
+			port = _serverConfigs[i].getPorts()[j];
+			tmp.setPort(port);
             extendedServerConfigs.push_back(tmp);
         }
     }

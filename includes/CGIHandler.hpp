@@ -38,6 +38,7 @@ class CGIHandler
 
             std::string getBody();
             ssize_t getBodyLength();
+			bool		hasTimeout() const;
             
     private:
             std::string _execute(RequestParser rp, std::string cgi_folder);
@@ -46,9 +47,11 @@ class CGIHandler
             std::vector<std::string> _env;
             std::string _body;
             ssize_t     _bodyLength;
-            void        _deleteArgsEnv(char **args, char **env);
+			bool		_hasTimeout;
 
+            void        _deleteArgsEnv(char **args, char **env);
             std::string bodyParser(std::string requestBody);
+			std::string	_readOutputChild( int pipeCGIToServer[2]);
 };
 
 #endif

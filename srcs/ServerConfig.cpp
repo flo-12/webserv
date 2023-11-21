@@ -231,9 +231,9 @@ bool    ServerConfig::_setDefaultErrorPages(void)
                 std::cout   << YELLOW << "WARNING: " << RESET_PRINT << "no error page " 
                             << arrErrorCodes[i] << " provided, default set to " 
                             << arrErrorDefaultLocations[i] << std::endl;
-                _errorPage.insert(std::make_pair(arrErrorCodes[i], 
-                                                    arrErrorDefaultLocations[i]));
             }
+            _errorPage.insert(std::make_pair(arrErrorCodes[i], 
+                                                arrErrorDefaultLocations[i]));
             b = true;
         }
     }

@@ -37,10 +37,8 @@ Response::Response( RequestParser request, ServerConfig config )
 	_method = request.getMethod();
 	_setPaths( request.getPath() );
 
-	if (!_checkPreconditions( ) ) // check again the _method!=POST
-	{
-		// _readErrorPage( _msgStatusLine.statusCode ); // why did we add this
-	}
+	if ( !_checkPreconditions( ) )
+		_readErrorPage( _msgStatusLine.statusCode );
 	else if ( _checkRedirection( ) )
 		;
 	else if ( _method == GET )
@@ -104,7 +102,8 @@ bool	Response::_checkPreconditions()
 	// differentiate for DELETE and GET <--- TODO
 	if ( access(_paths.responseUri.c_str(), F_OK) != 0 ) {
 		printDebug("File not found: " + _paths.responseUri, DEBUG_PRECOND, YELLOW, 0);
-		_readErrorPage( STATUS_404 );
+		//_readErrorPage( STATUS_404 );
+		_msgStatusLine.statusCode = STATUS_404;
 		return false;
 	}
 
@@ -113,6 +112,7 @@ bool	Response::_checkPreconditions()
 		|| (_method == DELETE && access(_paths.responseUri.c_str(), X_OK) != 0 ) ) {
 		printDebug("No access to file: " + _paths.responseUri, DEBUG_PRECOND, YELLOW, 0);
 		_readErrorPage( STATUS_403 );
+		_msgStatusLine.statusCode = STATUS_403;
 		return false;
 	}
 
@@ -124,7 +124,8 @@ bool	Response::_checkPreconditions()
 			break ;
 		else if ( it + 1 == methods.end() ) {
 			printDebug("Method not allowed: " + httpMethodToString(_method), DEBUG_PRECOND, YELLOW, 0);
-			_readErrorPage( STATUS_405 );
+			//_readErrorPage( STATUS_405 );
+			_msgStatusLine.statusCode = STATUS_405;
 			return false;
 		}
 	}
@@ -132,28 +133,32 @@ bool	Response::_checkPreconditions()
 	// check if HTTP version is supported
 	if ( _request.getProtocol() != _httpVersionAllowed ) {
 		printDebug("HTTP version not supported: " + _request.getProtocol(), DEBUG_PRECOND, YELLOW, 0);
-		_readErrorPage( STATUS_405 );
+		//_readErrorPage( STATUS_405 );
+		_msgStatusLine.statusCode = STATUS_405;
 		return false;
 	}
 
 	// check if request body size is valid
 	if ( _request.getBodyLength() > _config.getClientMaxBodySize() ) {
 		printDebug("Request body too large: " + to_string(_request.getBodyLength()), DEBUG_PRECOND, YELLOW, 0);
-		_readErrorPage( STATUS_413 );
+		//_readErrorPage( STATUS_413 );
+		_msgStatusLine.statusCode = STATUS_413;
 		return false;
 	}
 
 	// check if Host field is present
 	if ( _request.getHost() != _config.getHost() + ":" + _config.getPort()) {
 		printDebug("Host field not present or wrong: " + _request.getHost(), DEBUG_PRECOND, YELLOW, 0);
-		_readErrorPage( STATUS_400 );
+		//_readErrorPage( STATUS_400 );
+		_msgStatusLine.statusCode = STATUS_400;
 		return false;
 	}
 
 	// check if content length is smaller 0
 	if ( _request.getContentLength() < static_cast<ssize_t>(0) ) {
 		printDebug("Content length smaller than 0: " + to_string(_request.getContentLength()), DEBUG_PRECOND, YELLOW, 0);
-		_readErrorPage( STATUS_400 );
+		//_readErrorPage( STATUS_400 );
+		_msgStatusLine.statusCode = STATUS_400;
 		return false;
 	}
 
@@ -207,7 +212,7 @@ void	Response::_handleGet()
 		}
 		catch (std::exception &e) {
 			std::cerr << e.what() << std::endl;
-			//_setMsgStatusLine( STATUS_400 );
+			_readErrorPage( STATUS_500 );
 		}
 	}
 	else
@@ -218,8 +223,6 @@ void	Response::_handleGet()
 		else
 			_setMsgStatusLine( STATUS_200 );
 	}
-
-	//_msgHeader["Content-Type"] = ;
 	_msgHeader["Content-Length"] = to_string(_msgBodyLength);
 }
 
@@ -232,23 +235,19 @@ void	Response::_handleGet()
 */
 void	Response::_handlePost()
 {
-	/* if ( cgiNeede() )
-		// call CGI */
-	
-	// Prototype for file upload
-	/* std::cout << " ++++++++++++++++++++++ POST request ++++++++++++++++++++++" << std::endl;
-	std::cout << _request.getBody() << std::endl;
-	std::cout << " +++++++++++++++++++++++++++++++++++++++++++++++++++++++++" << std::endl; */
-
 	if ( _isCgiNeeded() ) {
 		try {
 			// call CGI
 			std::string cgi_folder = _config.getLocations()[_paths.confLocKey].getRoot();
 			CGIHandler	CGIHandler( _request, cgi_folder );
-			_msgBody = CGIHandler.getBody();	// change: execute is called by default constructor and CGIHandler has a getBody method
-			_msgBodyLength = CGIHandler.getBodyLength();	// change: CGIHandler.getBodyLength()
-			_setMsgStatusLine( STATUS_200 );	// check for errors!!!!
-			_msgHeader["Content-Length"] = to_string(_msgBodyLength);
+			if ( CGIHandler.hasTimeout() )
+				_readErrorPage( STATUS_408 );	// check error code
+			else {
+				_msgBody = CGIHandler.getBody();	// change: execute is called by default constructor and CGIHandler has a getBody method
+				_msgBodyLength = CGIHandler.getBodyLength();	// change: CGIHandler.getBodyLength()
+				_setMsgStatusLine( STATUS_200 );	// check for errors!!!!
+				_msgHeader["Content-Length"] = to_string(_msgBodyLength);
+			}
 		}
 		catch (std::exception &e) {
 			std::cerr << e.what() << std::endl;

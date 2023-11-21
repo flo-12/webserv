@@ -28,6 +28,7 @@
 // Webserv:
 # define MAX_CONNECTIONS 500
 # define TIMEOUT_POLL 5000
+# define TIMEOUT_CGI 3
 # define MAX_REQ_SIZE 8192
 # define TIMEOUT_RECEIVE 8192
 
@@ -40,13 +41,14 @@
 #define	DEBUG_REQUEST_HEADER 0
 #define	DEBUG_RESPONSE 0
 #define	DEBUG_RESPONSE_HEADER 0
-#define	DEBUG_SERVER_STATE 0
+#define	DEBUG_SERVER_STATE 1
 #define	DEBUG_SERVER_STATE_DEEP 0
 #define	DEBUG_SERVER_STATE_ERROR 0
 #define	DEBUG_CONFIG_WARNING 0
 #define	DEBUG_SERVER_CONFIG 0
 #define	DEBUG_PATHS 0
 #define	DEBUG_PRECOND 0
+#define DEBUG_CGI 0
 
 
 /**************************************************************/

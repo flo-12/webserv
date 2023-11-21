@@ -214,7 +214,7 @@ ResponseStatus	ClientSocket::sendResponse()
 		_response.startSending = true;
 	}
 
-	printDebug( "+++++++++++++++++ Response +++++++++++++++++\n" + _request.buffer + "+++++++++++++++++++++++++++++++++++++++++++", 
+	printDebug( "+++++++++++++++++ Response +++++++++++++++++\n" + _response.message + "+++++++++++++++++++++++++++++++++++++++++++", 
 			DEBUG_RESPONSE, MAGENTA, 0 );
 
 	ssize_t	bytesSent = send(_fd, _response.message.c_str(), _response.msgLength, 0);

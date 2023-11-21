@@ -17,7 +17,7 @@ CGIHandler::CGIHandler() {}
 //handle timeout for CGI, in case of endless loop
 
 CGIHandler::CGIHandler(RequestParser rp, std::string cgi_folder): 
-	_path("") 
+	_path(""), _bodyLength(0), _hasTimeout(false)
 {
     //std::cout << std::endl << "----------////#####" << std::endl;
     // const int timeout = 5;
@@ -55,9 +55,14 @@ std::string CGIHandler::getBody()
     return(_body);
 }
 
-ssize_t CGIHandler::getBodyLength()
+ssize_t	CGIHandler::getBodyLength()
 {
     return(_bodyLength);
+}
+
+bool	CGIHandler::hasTimeout() const
+{
+	return _hasTimeout;
 }
 
 std::string CGIHandler::bodyParser(std::string requestBody)
@@ -128,7 +133,9 @@ std::string CGIHandler::_execute(RequestParser rp, std::string cgi_folder)
         std::strcpy(env[i], _env[i].c_str());
     }
     env[_env.size()] = NULL;
-    
+
+    pid_t	pidWait = 0;
+	time_t	startTime = time(0);
     std::string output;
     int pid = fork();
     if (pid == 0)
@@ -152,30 +159,57 @@ std::string CGIHandler::_execute(RequestParser rp, std::string cgi_folder)
         }
         exit(0);
     }
-    else if (pid > 0)
-    {
+	else if (pid > 0)
+	{
         close(pipeServerToCGI[0]);
         close(pipeCGIToServer[1]);
         std::string body = bodyParser(rp.getBody());
-        write(pipeServerToCGI[1], body.c_str(), body.length());
+		write(pipeServerToCGI[1], body.c_str(), body.length());
         close(pipeServerToCGI[1]);
         
-        const int BUFSIZE = 4096;
-        char buffer[BUFSIZE];
-        int bytesRead = 1;
-        while (bytesRead > 0) 
-        {
-            bytesRead = read(pipeCGIToServer[0], buffer, BUFSIZE);
-            output.append(buffer, bytesRead);
-        }
-        waitpid(pid, NULL, 0);
+    	while (pidWait == 0 && time(0) - startTime <= TIMEOUT_CGI) {
+			std::cout << "Waiting for child process to terminate" << std::endl;
+			pidWait = waitpid(pid, NULL, WNOHANG);
+		}
+		if (pidWait == 0) {
+			std::cout << "Child process still running" << std::endl;
+			kill(1, SIGKILL);
+			_hasTimeout = true;
+		}
+		else if (pidWait == -1)	{// maybe changes and error handling here????
+			throw std::runtime_error("Error: waitpid failed");
+		}
+		else
+			std::cout << "Child process terminated" << std::endl;
     }
     else
     {
         _deleteArgsEnv(args, env);
         throw std::runtime_error("Error: CGI fork failed");
     }
-    _bodyLength = output.length();
+
+	if ( !_hasTimeout )
+		output = _readOutputChild(pipeCGIToServer);
+
     _deleteArgsEnv(args, env);
     return (output);
+}
+
+std::string	CGIHandler::_readOutputChild( int pipeCGIToServer[2] )
+{
+	const int BUFSIZE = 4096;
+	char buffer[BUFSIZE];
+	//if (_execveFinished) {
+	int bytesRead = 1;
+	std::string output;
+
+	while (bytesRead > 0) {		
+		bytesRead = read(pipeCGIToServer[0], buffer, BUFSIZE);
+		if ( bytesRead < 0 )
+			throw std::runtime_error("Error: CGI read");
+		output.append(buffer, bytesRead);
+		_bodyLength += bytesRead;
+	}
+
+	return output;
 }

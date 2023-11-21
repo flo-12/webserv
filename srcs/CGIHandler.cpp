@@ -6,7 +6,7 @@
 /*   By: pdelanno <pdelanno@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/10/31 14:31:46 by pdelanno          #+#    #+#             */
-/*   Updated: 2023/11/21 14:43:07 by pdelanno         ###   ########.fr       */
+/*   Updated: 2023/11/21 14:55:03 by pdelanno         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -91,10 +91,10 @@ void CGIHandler::_deleteArgsEnv(char **args, char **env)
 {
     for (unsigned long i = 0; i < _args.size(); ++i)
         delete[] args[i];
-    delete args;
+    delete[] args;
     for (unsigned long i = 0; i < _env.size(); ++i)
         delete[] env[i];
-    delete env;
+    delete[] env;
 }
 
 std::string CGIHandler::_execute(RequestParser rp, std::string cgi_folder)
@@ -220,5 +220,6 @@ std::string	CGIHandler::_readOutputChild( int pipeCGIToServer[2] )
 		_bodyLength += bytesRead;
 	}
 
+    close(pipeCGIToServer[0]);
 	return output;
 }

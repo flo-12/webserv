@@ -6,7 +6,7 @@
 /*   By: pdelanno <pdelanno@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/10/31 14:31:36 by pdelanno          #+#    #+#             */
-/*   Updated: 2023/11/12 15:53:35 by pdelanno         ###   ########.fr       */
+/*   Updated: 2023/11/21 14:23:15 by pdelanno         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -47,7 +47,12 @@ class CGIHandler
             std::vector<std::string> _env;
             std::string _body;
             ssize_t     _bodyLength;
+            const char *_executable;
 			bool		_hasTimeout;
+            void        _handleChildProcess(int *pipeServerToCGI, 
+                            int *pipeCGIToServer, char **args, char**env);
+            void        _handleParentProcess(RequestParser rp, int pid, int *pipeServerToCGI, 
+                            int *pipeCGIToServer, pid_t pidWait, time_t startTime);
 
             void        _deleteArgsEnv(char **args, char **env);
             std::string bodyParser(std::string requestBody);

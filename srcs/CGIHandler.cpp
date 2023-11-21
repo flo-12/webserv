@@ -6,23 +6,23 @@
 /*   By: pdelanno <pdelanno@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/10/31 14:31:46 by pdelanno          #+#    #+#             */
-/*   Updated: 2023/11/16 15:36:55 by pdelanno         ###   ########.fr       */
+/*   Updated: 2023/11/21 14:43:07 by pdelanno         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "CGIHandler.hpp"
+
+/**************************************************************/
+/*                 DEFAULT CON-/DESTRUCTOR                    */
+/**************************************************************/
 
 CGIHandler::CGIHandler() {}
 
 //handle timeout for CGI, in case of endless loop
 
 CGIHandler::CGIHandler(RequestParser rp, std::string cgi_folder): 
-	_path(""), _bodyLength(0), _hasTimeout(false)
+	_path(""), _bodyLength(0), _executable(""), _hasTimeout(false) 
 {
-    //std::cout << std::endl << "----------////#####" << std::endl;
-    // const int timeout = 5;
-    // clock_t start = clock();
-    
     _env.push_back("CONTENT_LENGTH=" + rp.getHeaders()["Content-Length"]);
     std::string type;
     if (rp.getMethod() == GET)
@@ -35,35 +35,30 @@ CGIHandler::CGIHandler(RequestParser rp, std::string cgi_folder):
     _env.push_back("CONTENT_TYPE=" + rp.getHeaders()["Content-Type"]);
     _env.push_back("SCRIPT_FILENAME=" + rp.getPath());;
     _body = _execute(rp, cgi_folder);
-    // while (true)
-    // {
-    //     clock_t current = clock();
-    //     int elapsedSeconds = static_cast<double>(current - start) / CLOCKS_PER_SEC;
-        
-    //     if (elapsedSeconds >= timeout)
-    //     {
-    //         std::cout << "Timeout" << std::endl;
-    //         break ;
-    //     }
-    // } //when execve can't find the executable
 }
 
 CGIHandler::~CGIHandler() {}
+
+/**************************************************************/
+/*                 GETTER & SETTER METHODS                    */
+/**************************************************************/
 
 std::string CGIHandler::getBody()
 {
     return(_body);
 }
-
 ssize_t	CGIHandler::getBodyLength()
 {
     return(_bodyLength);
 }
-
 bool	CGIHandler::hasTimeout() const
 {
-	return _hasTimeout;
+	return (_hasTimeout);
 }
+
+/**************************************************************/
+/*                      PUBLIC METHODS                        */
+/**************************************************************/
 
 std::string CGIHandler::bodyParser(std::string requestBody)
 {
@@ -104,13 +99,15 @@ void CGIHandler::_deleteArgsEnv(char **args, char **env)
 
 std::string CGIHandler::_execute(RequestParser rp, std::string cgi_folder)
 {
-    const char *executable = "/usr/bin/php";
+    // creating the args
+    
+    _executable = "/usr/bin/php";
     if (rp.getType() != PHP)
-    {
-        executable = "/usr/bin/python3";
-    }
-    _args.push_back(executable);
+        _executable = "/usr/bin/python3";
+    _args.push_back(_executable);
     _args.push_back(cgi_folder + rp.getPath());
+    
+    // creating the pipes
     
     int pipeServerToCGI[2];
     int pipeCGIToServer[2];
@@ -118,6 +115,8 @@ std::string CGIHandler::_execute(RequestParser rp, std::string cgi_folder)
         throw std::runtime_error("Error: pipe server-to-CGI failed");
     if (pipe(pipeCGIToServer) == -1)
         throw std::runtime_error("Error: pipe CGI-to-server failed");
+    
+    // converting the args and env for execve()
     
     char **args = new char*[_args.size() + 1];
     for (unsigned long i = 0; i < _args.size(); ++i)
@@ -134,72 +133,82 @@ std::string CGIHandler::_execute(RequestParser rp, std::string cgi_folder)
     }
     env[_env.size()] = NULL;
 
+    // executing the PHP or PY in the child process
+    // retrieving the output in the parent
+
     pid_t	pidWait = 0;
 	time_t	startTime = time(0);
     std::string output;
     int pid = fork();
     if (pid == 0)
-    {
-        close(pipeServerToCGI[1]);
-        close(pipeCGIToServer[0]);
-        if (dup2(pipeServerToCGI[0], STDIN_FILENO) == -1)
-        {
-            _deleteArgsEnv(args, env);
-            throw std::runtime_error("Error: dup2 server-to-CGI in child process failed");
-        }
-        if (dup2(pipeCGIToServer[1], STDOUT_FILENO) == -1)
-        {
-            _deleteArgsEnv(args, env);
-            throw std::runtime_error("Error: dup2 CGI-to-server in child process failed");
-        }
-        if (execve(executable, args, env) == -1)
-        {
-            _deleteArgsEnv(args, env);
-            throw std::runtime_error("Error: execve failed");
-        }
-        exit(0);
-    }
+        _handleChildProcess(pipeServerToCGI, pipeCGIToServer, args, env);
 	else if (pid > 0)
-	{
-        close(pipeServerToCGI[0]);
-        close(pipeCGIToServer[1]);
-        std::string body = bodyParser(rp.getBody());
-		write(pipeServerToCGI[1], body.c_str(), body.length());
-        close(pipeServerToCGI[1]);
-        
-    	while (pidWait == 0 && time(0) - startTime <= TIMEOUT_CGI) {
-			std::cout << "Waiting for child process to terminate" << std::endl;
-			pidWait = waitpid(pid, NULL, WNOHANG);
-		}
-		if (pidWait == 0) {
-			std::cout << "Child process still running" << std::endl;
-			kill(1, SIGKILL);
-			_hasTimeout = true;
-		}
-		else if (pidWait == -1)	{// maybe changes and error handling here????
-			throw std::runtime_error("Error: waitpid failed");
-		}
-		else
-			std::cout << "Child process terminated" << std::endl;
-    }
+        _handleParentProcess(rp, pid, pipeServerToCGI, pipeCGIToServer, pidWait, startTime);
     else
     {
         _deleteArgsEnv(args, env);
         throw std::runtime_error("Error: CGI fork failed");
     }
-
 	if ( !_hasTimeout )
 		output = _readOutputChild(pipeCGIToServer);
 
+    // cleaning the allocated memory
+
     _deleteArgsEnv(args, env);
     return (output);
+}
+
+void CGIHandler::_handleChildProcess(int *pipeServerToCGI, int *pipeCGIToServer, char **args, char**env)
+{
+    close(pipeServerToCGI[1]);
+    close(pipeCGIToServer[0]);
+    if (dup2(pipeServerToCGI[0], STDIN_FILENO) == -1)
+    {
+        _deleteArgsEnv(args, env);
+        throw std::runtime_error("Error: dup2 server-to-CGI in child process failed");
+    }
+    if (dup2(pipeCGIToServer[1], STDOUT_FILENO) == -1)
+    {
+        _deleteArgsEnv(args, env);
+        throw std::runtime_error("Error: dup2 CGI-to-server in child process failed");
+    }
+    if (execve(_executable, args, env) == -1)
+    {
+        _deleteArgsEnv(args, env);
+        throw std::runtime_error("Error: execve failed");
+    }
+    exit(0);
+}
+
+void CGIHandler::_handleParentProcess(RequestParser rp, int pid, int *pipeServerToCGI,
+                        int *pipeCGIToServer, pid_t pidWait, time_t startTime)
+{
+    close(pipeServerToCGI[0]);
+    close(pipeCGIToServer[1]);
+    std::string body = bodyParser(rp.getBody());
+	write(pipeServerToCGI[1], body.c_str(), body.length());
+    close(pipeServerToCGI[1]);
+    
+    while (pidWait == 0 && time(0) - startTime <= TIMEOUT_CGI) {
+		printDebug("Waiting for child process to terminate", DEBUG_CGI, MAGENTA, 0);
+		pidWait = waitpid(pid, NULL, WNOHANG);
+	}
+	if (pidWait == 0) {
+        printDebug("Child process still running", DEBUG_CGI, MAGENTA, 1);
+		kill(1, SIGKILL);
+		_hasTimeout = true;
+	}
+	else if (pidWait == -1)	{ // maybe changes and error handling here????
+		throw std::runtime_error("Error: waitpid failed");
+	}
+	else
+        printDebug("Child process terminated", DEBUG_CGI, MAGENTA, 2);
 }
 
 std::string	CGIHandler::_readOutputChild( int pipeCGIToServer[2] )
 {
 	const int BUFSIZE = 4096;
 	char buffer[BUFSIZE];
-	//if (_execveFinished) {
 	int bytesRead = 1;
 	std::string output;
 

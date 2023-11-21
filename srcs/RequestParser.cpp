@@ -6,7 +6,7 @@
 /*   By: pdelanno <pdelanno@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/10/24 12:52:22 by pdelanno          #+#    #+#             */
-/*   Updated: 2023/11/21 08:59:03 by pdelanno         ###   ########.fr       */
+/*   Updated: 2023/11/21 14:30:55 by pdelanno         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -80,16 +80,10 @@ RequestParser::formObject RequestParser::getFormObject() const
 {
     return(_form);
 }
-
 ssize_t RequestParser::getBodyLength() const
 {
     return(_bodyLength);
 }
-
-// ssize_t RequestParser::getNewBodyLength() const
-// {
-//     return(_newBodyLength);
-// }
 
 /**************************************************************/
 /*                      PUBLIC METHODS                        */
@@ -152,8 +146,6 @@ void RequestParser::_processForm(std::stringstream &linestream)
         buffer[_form.bodyLength] = '\0';
         _form.body = std::string(buffer, _form.bodyLength);
         delete[] buffer;
-
-
         
         std::getline(linestream, formBuffer, '\r');
         std::getline(linestream, _body, '\r');
@@ -268,7 +260,6 @@ void RequestParser::parseRequest(std::string const &buffer)
     }
     printDebug("---------------------------", DEBUG_REQUEST_HEADER, BABY_BLUE, 0);
 }
-
 
 /**************************************************************/
 /*                    OVERLOAD OPERATOR                       */

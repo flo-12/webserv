@@ -141,7 +141,7 @@ void RequestParser::_processForm(std::stringstream &linestream)
         _getFormBodyLength(_form.bodyLength);
 		_bodyLength = _form.bodyLength;
         
-        char* buffer = new char[_form.bodyLength];
+        char* buffer = new char[_form.bodyLength + 1];
         linestream.read(buffer, _form.bodyLength);
         buffer[_form.bodyLength] = '\0';
         _form.body = std::string(buffer, _form.bodyLength);

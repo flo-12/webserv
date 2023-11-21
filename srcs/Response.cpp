@@ -47,6 +47,9 @@ Response::Response( RequestParser request, ServerConfig config )
 		_handlePost();
 	else if ( _method == DELETE )
 		_handleDelete();
+
+	printDebug( "+++++++++ Response Header +++++++++\n" + getMsgHeader() + "+++++++++++++++++++++++++++++++++++", 
+		DEBUG_RESPONSE_HEADER, BLUE, 0 );
 }
 
 Response::~Response()
@@ -233,7 +236,7 @@ void	Response::_handlePost()
 			std::string cgi_folder = _config.getLocations()[_paths.confLocKey].getRoot();
 			CGIHandler	CGIHandler( _request, cgi_folder );
 			if ( CGIHandler.hasTimeout() )
-				_readErrorPage( STATUS_408 );	// check error code
+				_readErrorPage( STATUS_504 );	// check error code
 			else {
 				_msgBody = CGIHandler.getBody();	// change: execute is called by default constructor and CGIHandler has a getBody method
 				_msgBodyLength = CGIHandler.getBodyLength();	// change: CGIHandler.getBodyLength()

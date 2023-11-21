@@ -5,7 +5,7 @@ NAME		= webserv
 
 # Compiler
 CC			= c++
-FLAGS		= -Wextra -Wall -Werror -std=c++98
+FLAGS		= -Wextra -Wall -Werror -std=c++98 -g
 
 # includes
 INC			=	-I ./includes/

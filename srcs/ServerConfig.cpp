@@ -200,7 +200,7 @@ unsigned int ServerConfig::_ipStringToInt(const std::string ipAddress) {
 */
 bool    ServerConfig::_setDefaultErrorPages(void)
 {
-    int numDefaultErrorLocations = 7;
+    int numDefaultErrorLocations = 6;
     bool    b = false;
 
     HttpStatusCode arrErrorCodes[] = {
@@ -208,7 +208,6 @@ bool    ServerConfig::_setDefaultErrorPages(void)
         static_cast<HttpStatusCode>(403),
         static_cast<HttpStatusCode>(404),
         static_cast<HttpStatusCode>(405),
-        static_cast<HttpStatusCode>(408),
         static_cast<HttpStatusCode>(500),
         static_cast<HttpStatusCode>(504)
     };
@@ -217,7 +216,6 @@ bool    ServerConfig::_setDefaultErrorPages(void)
         "/error_pages/403.html",
         "/error_pages/404.html",
         "/error_pages/405.html",
-        "/error_pages/408.html",
         "/error_pages/500.html",
         "/error_pages/504.html",
     };

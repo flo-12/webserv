@@ -23,7 +23,7 @@
 # define RESET_PRINT "\033[0m"
 
 // Default server configurations:
-# define DEFAULT_CLIENT_MAX_BODY_SIZE 300000
+# define DEFAULT_CLIENT_MAX_BODY_SIZE 3000000
 # define DEFAULT_INDEX "index.html"
 
 // Webserv:
@@ -38,19 +38,19 @@
 # define HTTP_STATS_CODE_FILE "./database/http_status_codes.csv"
 
 // Debug-Messages:
-#define	DEBUG_REQUEST 1
+#define	DEBUG_REQUEST 0
 #define DEBUG_REQUEST_INTERNAL 1
 #define	DEBUG_REQUEST_HEADER 0
 #define	DEBUG_RESPONSE 0
-#define	DEBUG_RESPONSE_HEADER 0
-#define DEBUG_RESPONSE_ERROR 0
-#define	DEBUG_SERVER_STATE 0
+#define	DEBUG_RESPONSE_HEADER 1
+#define DEBUG_RESPONSE_ERROR 1
+#define	DEBUG_SERVER_STATE 1
 #define	DEBUG_SERVER_STATE_DEEP 0
-#define	DEBUG_SERVER_STATE_ERROR 0
+#define	DEBUG_SERVER_STATE_ERROR 1
 #define	DEBUG_CONFIG_WARNING 0
 #define	DEBUG_SERVER_CONFIG 0
 #define	DEBUG_PATHS 0
-#define	DEBUG_PRECOND 0
+#define	DEBUG_PRECOND 1
 #define DEBUG_CGI 0
 
 
@@ -100,6 +100,7 @@ typedef enum e_HttpStatusCode
 	STATUS_408 = 408,
 	STATUS_413 = 413,
 	STATUS_500 = 500,
+	STATUS_504 = 504,
 	STATUS_505 = 505
 } HttpStatusCode;
 

@@ -223,12 +223,15 @@ ResponseStatus	ClientSocket::sendResponse()
 			DEBUG_RESPONSE, MAGENTA, 0 );
 
 	ssize_t	bytesSent = send(_fd, _response.message.c_str(), _response.msgLength, 0);
-	if ( bytesSent < static_cast<ssize_t>(-1) ) {
+	if ( bytesSent <= static_cast<ssize_t>(-1) ) {
 		printDebug( "Error: send() in ClientSocket failed.", DEBUG_RESPONSE_ERROR, RED, 1 );
 		return SEND_ERROR;
 	}
-	std::cout << RED << "\t\tbytesSent: " << bytesSent << RESET_PRINT << std::endl;
-
+	else if ( bytesSent == 0 ) {
+		printDebug( "Error: send() in ClientSocket failed (0 bytes sent).", DEBUG_RESPONSE_ERROR, RED, 1 );
+		return SEND_ERROR;
+	}
+	
 	_response.sentBytes += bytesSent;
 
 	if ( _response.sentBytes >= _response.msgLength )

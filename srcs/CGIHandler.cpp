@@ -183,16 +183,16 @@ void CGIHandler::_handleChildProcess(int *pipeServerToCGI, int *pipeCGIToServer,
 void CGIHandler::_handleParentProcess(RequestParser rp, int pid, int *pipeServerToCGI,
                         int *pipeCGIToServer, pid_t pidWait, time_t startTime)
 {
+	
     close(pipeServerToCGI[0]);
     close(pipeCGIToServer[1]);
     std::string body = bodyParser(rp.getBody());
-	write(pipeServerToCGI[1], body.c_str(), body.length());
+	if ( !write(pipeServerToCGI[1], body.c_str(), body.length()) )
+		throw std::runtime_error("Error: CGI write");
     close(pipeServerToCGI[1]);
     
-    while (pidWait == 0 && time(0) - startTime <= TIMEOUT_CGI) {
-		printDebug("Waiting for child process to terminate", DEBUG_CGI, MAGENTA, 0);
+    while (pidWait == 0 && time(0) - startTime <= TIMEOUT_CGI) 
 		pidWait = waitpid(pid, NULL, WNOHANG);
-	}
 	if (pidWait == 0) {
         printDebug("Child process still running and will be killed", DEBUG_CGI, MAGENTA, 1);
 		kill(1, SIGKILL);

@@ -226,8 +226,10 @@ void RequestParser::parseRequest(std::string const &buffer)
         if (key[0] == '\r' && (_method == POST || _method == DELETE))
         {
             key.erase(0, 2);
-            if (_isUpload == false)
-                _body = key;
+            if (_isUpload == false) {
+				_body = key;
+				_bodyLength = _body.length();
+			}
             else
                 _processForm(linestream);
             break ;

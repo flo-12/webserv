@@ -6,7 +6,7 @@
 /*   By: pdelanno <pdelanno@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/10/31 11:13:14 by fbecht            #+#    #+#             */
-/*   Updated: 2023/11/21 14:38:22 by pdelanno         ###   ########.fr       */
+/*   Updated: 2023/11/21 15:05:50 by pdelanno         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -197,10 +197,10 @@ ResponseStatus	ClientSocket::sendResponse()
 		_response.startTime = time(0);
 
 		RequestParser	requestParser( _request.buffer, _request.contentLength );
-		if (DEBUG_REQUEST == 1) {
-			printDebug( "------ Request Post Processing ------", 1, BABY_BLUE, 0);
-			std::cout << BABY_BLUE << requestParser << RESET_PRINT << std::endl;
-			printDebug( "-------------------------------------", 1, BABY_BLUE, 0);
+		if (DEBUG_REQUEST_INTERNAL == 1) {
+			printDebug( "------ Request Post Processing ------", 1, BLUE, 0);
+			std::cout << BLUE << requestParser << RESET_PRINT << std::endl;
+			printDebug( "-------------------------------------", 1, BLUE, 0);
 		}
 
 		try

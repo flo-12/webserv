@@ -177,7 +177,7 @@ void CGIHandler::_handleChildProcess(int *pipeServerToCGI, int *pipeCGIToServer,
         _deleteArgsEnv(args, env);
         throw std::runtime_error("Error: execve failed");
     }
-    exit(0);
+    std::exit(0);
 }
 
 void CGIHandler::_handleParentProcess(RequestParser rp, int pid, int *pipeServerToCGI,

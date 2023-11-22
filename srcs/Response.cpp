@@ -91,6 +91,7 @@ void	Response::_setMsgStatusLine( HttpStatusCode httpStatus )
 
 /* _checkPreconditions:
 *	Checks if the request meets all preconditions:
+*		- path/file is a directory and location allows autoindex ⇒ 404 Not Found
 *		- path/file exists ⇒ 404 Not Found
 *		- right access to path/file (GET->read | ???POST->write??? | DELETE->execute) ⇒ 403 Forbidden
 *		- method of request invalid ⇒ 405 Method Not Allowed
@@ -102,8 +103,15 @@ void	Response::_setMsgStatusLine( HttpStatusCode httpStatus )
 */
 bool	Response::_checkPreconditions()
 {
+	// check if response path is a directory and the location allows autoindex
+	if ((_paths.responseUri[_paths.responseUri.length() - 1] == '/') &&
+		 (_config.getLocations()[_paths.confLocKey].getAutoindex() == false)) {
+		printDebug("Autoindex turned off for location: " + _paths.responseUri, DEBUG_PRECOND, YELLOW, 0);
+		_msgStatusLine.statusCode = STATUS_404;
+		return false;
+	}
+
 	// check if path/file exists
-	// differentiate for DELETE and GET <--- TODO
 	if ( access(_paths.responseUri.c_str(), F_OK) != 0 ) {
 		printDebug("File not found: " + _paths.responseUri, DEBUG_PRECOND, YELLOW, 0);
 		_msgStatusLine.statusCode = STATUS_404;
@@ -380,7 +388,8 @@ bool	Response::_readFile( std::string path )
 */
 bool	Response::_saveFile( std::string path, std::string content, ssize_t contentLength )
 {
-	if ( open(path.c_str(), O_RDWR|O_CREAT, S_IRWXU|S_IRWXO|S_IRWXG) == -1 )
+	int	fd;
+	if ( (fd = open(path.c_str(), O_RDWR|O_CREAT, S_IRWXU|S_IRWXO|S_IRWXG)) == -1 )
 		printDebug("Error: could not open file \"" + path + "\" with exeution rights ", 
 			DEBUG_SERVER_STATE_ERROR, RED, 0);
 
@@ -397,6 +406,7 @@ bool	Response::_saveFile( std::string path, std::string content, ssize_t content
 		return false;
 	}
 
+	close(fd);
 	file.close();
 
 	return true;

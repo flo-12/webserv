@@ -1,39 +1,49 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<meta charset="UTF-8">
-	<title>404</title>
-	<style>
-		body {
-			background-color: #0c0c0c;
-			font-family: Arial, sans-serif;
-			text-align: center;
-			padding: 20px;
-		}
+    <meta charset="UTF-8">
+    <title>404</title>
+    <style>
+        body {
+            background-color: #0c0c0c;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+        }
 
-		h1 {
-			font-size: 36px;
-			color: #d94f4f;
-		}
+        h1 {
+            font-size: 36px;
+            color: #d94f4f;
+        }
 
-		p {
-			font-size: 18px;
-			color: #48aa10;
-		}
+        p {
+            font-size: 18px;
+            color: #48aa10;
+            margin-bottom: 20px; /* Add margin to create space between text and image */
+        }
 
-		p span {
-			animation: blink 1s infinite;
-		}
+        p span {
+            animation: blink 1s infinite;
+        }
 
-		@keyframes blink {
-			0% { opacity: 1; }
-			50% { opacity: 0; }
-			100% { opacity: 1; }
-		}
-	</style>
+        img {
+            max-width: 100%; /* Make the image responsive */
+            height: auto; /* Maintain aspect ratio */
+            display: block; /* Remove extra space below inline images */
+            margin: 0 auto; /* Center the image */
+        }
+
+        @keyframes blink {
+            0% { opacity: 1; }
+            50% { opacity: 0; }
+            100% { opacity: 1; }
+        }
+    </style>
 </head>
 <body>
-	<h1>404 Not Found</h1>
-	<p><span>Where do you want to go?</span> - unfortunately, the page doesn't exist.</p>
+    <h1>404 Not Found</h1>
+    <p><span>Where do you want to go?</span> - unfortunately, the page doesn't exist.</p>
+    
+    <img src="https://i.pinimg.com/originals/a5/d1/82/a5d1823802d5219a6038fc0a5b401ff4.jpg" alt="404 Image">
 </body>
 </html>

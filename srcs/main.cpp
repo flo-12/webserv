@@ -13,8 +13,8 @@
 #include "../includes/common.hpp"
 #include "../includes/ConfigParser.hpp"
 #include "../includes/WebServ.hpp"
-#include <cstdlib>	// for EXIT_SUCCESS and EXIT_FAILURE
-#include <csignal>	// for signal()
+#include <cstdlib>
+#include <csignal>
 
 WebServ*	webservPtr = NULL;
 bool		sigint_received = false;
@@ -59,8 +59,6 @@ int	main( int argc, char **argv )
 	catch( const std::exception& e )
 	{
 		std::cerr << e.what() << '\n';
-		/* if ( webservPtr )
-			webservPtr->serverShutdown(); */
 		return EXIT_FAILURE;
 	}
 	

@@ -18,8 +18,6 @@
 
 CGIHandler::CGIHandler() {}
 
-//handle timeout for CGI, in case of endless loop
-
 CGIHandler::CGIHandler(RequestParser rp, std::string cgi_folder): 
 	_path(""), _bodyLength(0), _executable(""), _hasTimeout(false) 
 {
@@ -100,7 +98,6 @@ void CGIHandler::_deleteArgsEnv(char **args, char **env)
 std::string CGIHandler::_execute(RequestParser rp, std::string cgi_folder)
 {
     // creating the args
-    
     _executable = "/usr/bin/php";
     if (rp.getType() != PHP)
         _executable = "/usr/bin/python3";
@@ -108,7 +105,6 @@ std::string CGIHandler::_execute(RequestParser rp, std::string cgi_folder)
     _args.push_back(cgi_folder + rp.getPath());
     
     // creating the pipes
-    
     int pipeServerToCGI[2];
     int pipeCGIToServer[2];
     if (pipe(pipeServerToCGI) == -1)
@@ -117,7 +113,6 @@ std::string CGIHandler::_execute(RequestParser rp, std::string cgi_folder)
         throw std::runtime_error("Error: pipe CGI-to-server failed");
     
     // converting the args and env for execve()
-    
     char **args = new char*[_args.size() + 1];
     for (unsigned long i = 0; i < _args.size(); ++i)
     {
@@ -133,9 +128,8 @@ std::string CGIHandler::_execute(RequestParser rp, std::string cgi_folder)
     }
     env[_env.size()] = NULL;
 
-    // executing the PHP or PY in the child process
+    // executing the PHP or PY in the child process &
     // retrieving the output in the parent
-
     pid_t	pidWait = 0;
 	time_t	startTime = time(0);
     std::string output;
@@ -153,7 +147,6 @@ std::string CGIHandler::_execute(RequestParser rp, std::string cgi_folder)
 		output = _readOutputChild(pipeCGIToServer);
 
     // cleaning the allocated memory
-
     _deleteArgsEnv(args, env);
     return (output);
 }
@@ -198,7 +191,7 @@ void CGIHandler::_handleParentProcess(RequestParser rp, int pid, int *pipeServer
 		kill(1, SIGKILL);
 		_hasTimeout = true;
 	}
-	else if (pidWait == -1)	{ // maybe changes and error handling here????
+	else if (pidWait == -1)	{
 		throw std::runtime_error("Error: waitpid failed");
 	}
 	else

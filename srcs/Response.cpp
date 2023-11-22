@@ -218,7 +218,7 @@ void	Response::_handleGet()
 			}
 		}
 		catch (std::exception &e) {
-			std::cerr << e.what() << std::endl;
+			printDebug( e.what(), DEBUG_CGI, MAGENTA, 0 );
 			_readErrorPage( STATUS_500 );
 		}
 	}
@@ -257,7 +257,7 @@ void	Response::_handlePost()
 			}
 		}
 		catch (std::exception &e) {
-			std::cerr << e.what() << std::endl;
+			printDebug( e.what(), DEBUG_CGI, MAGENTA, 0 );
 			_readErrorPage( STATUS_500 );
 		}
 	}

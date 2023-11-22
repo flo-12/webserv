@@ -37,7 +37,7 @@ WebServ::WebServ( std::vector<t_ipPort> configInfo, std::vector<ServerConfig> _s
 		_initPollFd( serverSocket->getFd(), POLLIN, 0, &_pollFds[i] );
 	}
 
-	printDebug( "Server initialized...", DEBUG_SERVER_STATE, GREEN, 1 );
+	std::cout << "\033[1;32m" << "\tServer initialized..." << RESET_PRINT << std::endl;
 }
 
 WebServ::~WebServ()

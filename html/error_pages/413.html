@@ -21,6 +21,13 @@
 			color: #48aa10;
 		}
 
+		img {
+            max-width: 80%; /* Make the image responsive */
+            height: auto; /* Maintain aspect ratio */
+            display: block; /* Remove extra space below inline images */
+            margin: 0 auto; /* Center the image */
+        }
+
 		p span {
 			animation: blink 1s infinite;
 		}
@@ -35,5 +42,7 @@
 <body>
 	<h1>413 Payload Too Large</h1>
 	<p><span>Blinking</span> - ...</p>
+	<img src="	https://www.usatoday.com/gcdn/-mm-/b414460eec335da7bfc1adb35f3b46f4e54806a9/c=0-13-3666-2084/local/-/media/2015/06/21/USATODAY/USATODAY/635705053526763479-AP-Surfing-Record.jpg
+	alt="413 Image">
 </body>
 </html>

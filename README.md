@@ -1,8 +1,18 @@
-# Webserv
+# Webserv 🏄‍♂️
 
-This project is about writing our own HTTP server in C++. HTTP or **Hypertext Transfer Protocol** is the foundation of data communication for the World Wide Web, where hypertext documents include hyperlinks to other resources that the user can easily access. The primary function of a web server is to store, process, and deliver web pages to clients. The communication between client and server takes place using HTTP requests, such as GET, POST or DELETE to name just a few.
-A user agent, commonly a web browser, initiates communication by requesting a specific resource using HTTP and the server responds with the content of that resoruce or an error message if unable to do so (i.e. Error 404 for when the resource doesn't exist).
-While the primary function is to serve content, full implementation of HTTP also includes ways of receiving content from clients. This feature is used for submitting web forms, such as the uploading of files.
+This 42 project is about writing your own **HyperText Transfer Protocol** server in C++.
+
+## Summary
+
+## 1. [Introduction](#Introduction)
+## 2. [Usage](#Usage)
+## 3. [Fundamentals](#Fundamentals)
+  ### 3.1 [CGI](#CGI)
+
+## Introduction
+
+The primary function of a web server is to store, process, and deliver web pages to clients. The communication between client and server takes place using HTTP requests, such as GET, POST or DELETE to name just a few.
+A user agent, commonly a web browser, initiates communication by requesting a specific resource via HTTP and the server responds with the content of that resource or an error message if unable to do so (i.e. Error 404 for when the resource doesn't exist).
 
 Here is an example of what happens after launching our webserv and entering `http://127.0.0.1:18000` in Firefox:
 
@@ -26,20 +36,31 @@ Warning: `Makefile` is configured for `Linux` use only.
 > - Access the server through a browser at address `http://127.0.0.1:18000`
 > - To shut the server down, use `Ctrl` + `C`
 
-## Basic Concepts
+## Fundamentals
 
-# CGI
+### CGI
 
 CGI stands for **Common Gateway Interface**. Thanks to this interface, a web server can execute an external
 program and return the result of that execution. For example, if you click on the CGI button of our web page,
-you'll see that the link takes you too `http://127.0.0.1:18000/index.php`. HTTP does not handle `.php` files
-by default, and this is why we need a CGI in that case.
+the address will be `http://127.0.0.1:18000/index.php`. You guessed it, the client wouldn't know what to make of
+`.php` files by default, and this is why we need a CGI here.
+
 In order to execute a PHP file, we need the **PHP executable** usually located at `/usr/bin/php` on Linux.
 The job of the CGI is to execute the PHP file and retrieve the result of that execution. 
-In our case, we use PHP to execute a C++ program called RPN (Reverse Polish Notation, mathematical notation in
-which operators follow their operands, ex: `4 4 5 + +`). After entering an operation in the submit field, a POST
-request is sent to the server. The content of the field is passed as argument to the RPN program, and the result
-of the execution gets embedded in an HTML body thanks to PHP.
+
+In our website, we use PHP to execute a C++ program called **RPN** (Reverse Polish Notation, mathematical notation
+in which operators follow their operands, ex: `4 4 5 + +`). After entering an operation in the submit field, a POST
+request containing the string is sent to the server. The content of the string is passed as argument to the RPN
+program, and the result of the execution gets embedded in an HTML body thanks to PHP. The resulting HTML response
+can then be sent to the browser, interpreted, and displayed as a page:
+
+![webserv4](https://github.com/flo-12/webserv/assets/104844198/cfabf106-b79e-4483-a1a4-f3342aba379c)
+
+This project was done in collaboration by **[flo-12](https://github.com/flo-12)**, **[dubmix](https://github.com/dubmix)** and **[Linuswidmer](https://github.com/Linuswidmer)**.
+
+
+
+
 
 
 
